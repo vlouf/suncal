@@ -37,13 +37,13 @@ def corr_elev_refra(theta, n0=1.0004, k=4/3):
     return refra
 
 
-def get_solar_reflectivity(infile, 
-                           refl_name='total_power', 
-                           corr_refl_name='reflectivity', 
-                           zdr_name='differential_reflectivity', 
-                           zenith_threshold=10, 
-                           min_gate_altitude=1500, 
-                           max_gate_altitude=20000):
+def sunpos_reflectivity(infile, 
+                        refl_name='total_power', 
+                        corr_refl_name='reflectivity', 
+                        zdr_name='differential_reflectivity', 
+                        zenith_threshold=10, 
+                        min_gate_altitude=1500, 
+                        max_gate_altitude=20000):
     '''
     Extract Sun's reflectivity and radar azimuth/elevation angles of the solar hit.
 
@@ -112,7 +112,7 @@ def get_solar_reflectivity(infile,
     _, elev2d = np.meshgrid(r, elevation)
     _, zenith2d = np.meshgrid(r, zenith)
     _, sunazi2d = np.meshgrid(r, sun_azimuth)
-    altitude = radar.gate_z['data']
+    # altitude = radar.gate_z['data']
     
     reflectivity = radar.fields[refl_name]['data'].filled(np.NaN)
     zh = radar.fields[corr_refl_name]['data']
