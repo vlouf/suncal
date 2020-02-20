@@ -12,7 +12,6 @@ import pyart
 import netCDF4
 import numpy as np
 import pandas as pd
-import xarray as xr
 
 from .spa import sunpos
 
