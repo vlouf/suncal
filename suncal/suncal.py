@@ -1,3 +1,11 @@
+'''
+Radar calibration code using the Sun as reference for position and power.
+
+@title: suncal
+@creator: Valentin Louf
+@creator_email: valentin.louf@bom.gov.au
+@creation: 21/02/2020
+'''
 import datetime
 
 import pyart
@@ -37,12 +45,12 @@ def corr_elev_refra(theta, n0=1.0004, k=4/3):
     return refra
 
 
-def sunpos_reflectivity(infile, 
-                        refl_name='total_power', 
-                        corr_refl_name='reflectivity', 
-                        zdr_name='differential_reflectivity', 
-                        zenith_threshold=10, 
-                        min_gate_altitude=1500, 
+def sunpos_reflectivity(infile,
+                        refl_name='total_power',
+                        corr_refl_name='reflectivity',
+                        zdr_name='differential_reflectivity',
+                        zenith_threshold=10,
+                        min_gate_altitude=1500,
                         max_gate_altitude=20000):
     '''
     Extract Sun's reflectivity and radar azimuth/elevation angles of the solar hit.
@@ -66,7 +74,7 @@ def sunpos_reflectivity(infile,
     if zenith_threshold > 90:
         raise ValueError('Living in Uranus?')
 
-    # To save computing time, we check the first timestep only to determine 
+    # To save computing time, we check the first timestep only to determine
     # if it's worth to look into the dataset or we can skip it.
     with netCDF4.Dataset(infile) as ncid:
         lon = ncid['where'].lon
@@ -102,10 +110,10 @@ def sunpos_reflectivity(infile,
 
     # Radar Elevation.
     theta = np.deg2rad(radar.elevation['data'])
-    refra_angle = corr_elev_refra(theta)        
+    refra_angle = corr_elev_refra(theta)
     elevation = radar.elevation['data'] + np.rad2deg(refra_angle)
     # Radar coordinates.
-    r = radar.range['data']         
+    r = radar.range['data']
     radar_azimuth_total = radar.azimuth['data'] % 360  # Corr. for neg azi in case of wrapping.
     R, azi2d = np.meshgrid(r, radar_azimuth_total)
     _, time2d = np.meshgrid(r, dtime)
@@ -113,7 +121,7 @@ def sunpos_reflectivity(infile,
     _, zenith2d = np.meshgrid(r, zenith)
     _, sunazi2d = np.meshgrid(r, sun_azimuth)
     # altitude = radar.gate_z['data']
-    
+
     reflectivity = radar.fields[refl_name]['data'].filled(np.NaN)
     zh = radar.fields[corr_refl_name]['data']
     try:
@@ -122,25 +130,25 @@ def sunpos_reflectivity(infile,
     except KeyError:
         is_zdr = False
 
-    pos = ((np.abs(azi2d - sunazi2d) < 5) & 
-           (np.abs(elev2d - zenith2d) < 5) &    
+    pos = ((np.abs(azi2d - sunazi2d) < 5) &
+           (np.abs(elev2d - zenith2d) < 5) &
            (R > 75e3) &
            (elev2d > 0.5) &
            (~np.isnan(reflectivity)) &
-           (reflectivity < 15) & 
+           (reflectivity < 15) &
            (zh < 10))
-    
+
     if np.sum(pos) == 0:
         raise SunNotFoundError('No solar hit found.')
-    
+
     data_dict = {'time': time2d[pos],
                  'range': R[pos],
                  'sun_azimuth': sunazi2d[pos],
                  'sun_elevation': zenith2d[pos],
                  'radar_elevation': elev2d[pos],
                  'radar_azimuth': azi2d[pos],
-                 'reflectivity': reflectivity[pos]}    
+                 'reflectivity': reflectivity[pos]}
     if is_zdr:
-        data_dict.update({'differential_reflectivity': zdr[pos]})    
+        data_dict.update({'differential_reflectivity': zdr[pos]})
 
     return pd.DataFrame(data_dict)
