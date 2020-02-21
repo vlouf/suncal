@@ -1,4 +1,4 @@
-# Suncal
+# ☀️ Suncal
 
 Solar calibration of radar data. The radio noise that comes from the Sun has been reported in literature as a reference signal to check the quality of dual-polarization weather radar receivers for the S-band and C-band.
 
