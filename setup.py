@@ -22,7 +22,7 @@ setup(
     # This is the name of your project. The first time you publish this
     # package, this name will be registered for you. It will determine how
     # users can install this project, e.g.:
-    name='suncal',  # Required    
+    name='suncal',  # Required
     #
     # $ pip install sampleproject
     #
@@ -102,6 +102,7 @@ setup(
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
     ],
 
     # This field adds keywords for your project which will appear on the
@@ -127,7 +128,7 @@ setup(
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['numpy', 'arm_pyart', 'pandas', 'netCDF4'],  # Optional
+    install_requires=['numpy', 'arm_pyart', 'pandas', 'netCDF4', 'dask', 'crayons'],  # Optional
 
     # List additional URLs that are relevant to your project as a dict.
     #
