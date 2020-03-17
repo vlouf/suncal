@@ -8,6 +8,7 @@ import datetime
 import warnings
 import traceback
 
+import crayons
 import numpy as np
 import pandas as pd
 import dask.bag as db
@@ -69,8 +70,17 @@ def savedata(rslt_list, path):
 
     df = pd.concat(rslt_list).reset_index()
     dtime = df.time[0].strftime('%Y%m%d')
+    year = df.time[0].strftime('%Y')
+
+    path = os.path.join(path, RID)
+    mkdir(path)
+    path = os.path.join(path, year)
+    mkdir(path)
+
     outfilename = os.path.join(path, f'suncal.{RID}.{dtime}.csv')
     df.to_csv(outfilename)
+    print(crayons.green(f'{len(df)} solar hits on {dtime}.'))
+    print(crayons.green(f'Results saved in {outfilename}.'))
 
     return None
 
@@ -79,16 +89,17 @@ def main(date_range):
     for date in date_range:
         zipfile = get_radar_archive_file(date)
         if zipfile is None:
-            print(f'No file found for date {date}.')
+            print(crayons.red(f'No file found for date {date}.'))
             continue
 
         namelist = extract_zip(zipfile, path=ZIPDIR)
+        print(crayons.yellow(f'{len(namelist)} files to process for {date}.'))
         bag = db.from_sequence(namelist).map(buffer)
         rslt = bag.compute()
         rslt = [r for r in rslt if r is not None]
 
         if len(rslt) == 0:
-            print(f'No results for date {date}.')
+            print(crayons.red(f'No results for date {date}.'))
         else:
             savedata(rslt, path=OUTPATH)
 
@@ -154,6 +165,10 @@ if __name__ == "__main__":
     except ValueError:
         parser.error('Invalid dates.')
         sys.exit()
+
+    print(crayons.green(f'Processing sun calibration for radar {RID}.'))
+    print(crayons.green(f'Between {START_DATE} and {END_DATE}.'))
+    print(crayons.green(f'Data will be saved in {OUTPATH}.'))
 
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
