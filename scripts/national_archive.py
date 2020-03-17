@@ -155,4 +155,6 @@ if __name__ == "__main__":
         parser.error('Invalid dates.')
         sys.exit()
 
-    main(date_range)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        main(date_range)
