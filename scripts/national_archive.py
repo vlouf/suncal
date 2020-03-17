@@ -19,6 +19,7 @@ import gc
 import os
 import sys
 import glob
+import time
 import zipfile
 import argparse
 import datetime
@@ -247,6 +248,9 @@ if __name__ == "__main__":
     print(crayons.green(f'Between {START_DATE} and {END_DATE}.'))
     print(crayons.green(f'Data will be saved in {OUTPATH}.'))
 
+    tick = time.time()
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         main(date_range)
+    tock = time.time()
+    print(crayons.magenta(f'Process finished in {tock - tick:0.2}s.'))
