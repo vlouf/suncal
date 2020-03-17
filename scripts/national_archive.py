@@ -25,6 +25,11 @@ def buffer(infile):
     return rslt
 
 
+def check_rid():
+    indir = f'/g/data/rq0/odim_archive/odim_pvol/{RID}'
+    return os.path.exists(indir)
+
+
 def extract_zip(inzip, path):
     with zipfile.ZipFile(inzip) as zid:
         zid.extractall(path=path)
@@ -70,8 +75,8 @@ def savedata(rslt_list, path):
     return None
 
 
-def main():
-    for date in pd.date_range(START_DATE, END_DATE):
+def main(date_range):
+    for date in date_range:
         zipfile = get_radar_archive_file(date)
         if zipfile is None:
             print(f'No file found for date {date}.')
@@ -130,11 +135,15 @@ if __name__ == "__main__":
         required=True)
 
     args = parser.parse_args()
-    RID = args.rid
+    RID = f"{args.rid:02}"
     START_DATE = args.start_date
     END_DATE = args.end_date
     OUTPATH = args.output
     ZIPDIR = '/scratch/kl02/vhl548/unzipdir/'
+
+    if not check_rid():
+        parser.error('Invalid Radar ID.')
+        sys.exit()
 
     try:
         start = datetime.datetime.strptime(START_DATE, "%Y%m%d")
@@ -146,4 +155,4 @@ if __name__ == "__main__":
         parser.error('Invalid dates.')
         sys.exit()
 
-    main()
+    main(date_range)
