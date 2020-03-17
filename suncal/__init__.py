@@ -1,1 +1,1 @@
-from .suncal import sunpos_reflectivity
+from .suncal import sunpos_reflectivity, SunNotFoundError
