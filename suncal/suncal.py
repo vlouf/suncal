@@ -7,6 +7,7 @@ Radar calibration code using the Sun as reference for position and power.
 @creation: 21/02/2020
 '''
 import datetime
+import traceback
 
 import pyart
 import netCDF4
@@ -92,7 +93,11 @@ def sunpos_reflectivity(infile,
         raise SunNotFoundError('Sun not within scope.')
 
     # Potential hit from the Sun. Read the whole volume now.
-    radar = pyart.aux_io.read_odim_h5(infile, delay_field_loading='True')
+    try:
+        radar = pyart.aux_io.read_odim_h5(infile, delay_field_loading='True')
+    except Exception:
+        traceback.print_exc()
+        return None
     dtime = netCDF4.num2date(radar.time['data'], radar.time['units'])
     lat = radar.latitude['data']
     lon = radar.longitude['data']
