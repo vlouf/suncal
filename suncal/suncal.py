@@ -10,6 +10,7 @@ import datetime
 import traceback
 
 import pyart
+import cftime
 import netCDF4
 import numpy as np
 import pandas as pd
@@ -98,7 +99,11 @@ def sunpos_reflectivity(infile,
     except Exception:
         traceback.print_exc()
         return None
-    dtime = netCDF4.num2date(radar.time['data'], radar.time['units'])
+
+    dtime = cftime.num2date(radar.time['data'],
+                            radar.time['units'],
+                            only_use_cftime_datetimes=False,
+                            only_use_python_datetimes=True)
     lat = radar.latitude['data']
     lon = radar.longitude['data']
     if height == 0:
