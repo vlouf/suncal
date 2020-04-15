@@ -8,7 +8,8 @@ Solar calibration of radar data. The radio noise that comes from the Sun has bee
 - [numpy](https://www.numpy.org/)
 - [pandas](https://pandas.pydata.org/)
 - [Py-ART](https://github.com/ARM-DOE/pyart)
-
+- [dask](https://dask.org/)
+- [crayons](https://github.com/MasterOdin/crayons)
 ## References
 
 Huuskonen, A., & Holleman, I. (2007). Determining Weather Radar Antenna Pointing Using Signals Detected from the Sun at Low Antenna Elevations. Journal of Atmospheric and Oceanic Technology, 24(3), 476–483. [10.1175/JTECH1978.1](https://doi.org/10.1175/JTECH1978.1)
