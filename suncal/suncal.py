@@ -100,10 +100,7 @@ def sunpos_reflectivity(infile,
         traceback.print_exc()
         return None
 
-    dtime = cftime.num2date(radar.time['data'],
-                            radar.time['units'],
-                            only_use_cftime_datetimes=False,
-                            only_use_python_datetimes=True)
+    dtime = cftime.num2pydate(radar.time['data'], radar.time['units'])
     lat = radar.latitude['data']
     lon = radar.longitude['data']
     if height == 0:
