@@ -61,7 +61,7 @@ def check_rid():
     '''
     Check if the Radar ID provided exists.
     '''
-    indir = f'/g/data/rq0/odim_archive/odim_pvol/{RID}'
+    indir = f'/g/data/rq0/level_1/odim_pvol/{RID}'
     return os.path.exists(indir)
 
 
@@ -103,7 +103,7 @@ def get_radar_archive_file(date):
         Radar archive if it exists at the given date.
     '''
     datestr = date.strftime('%Y%m%d')
-    file = f"/g/data/rq0/odim_archive/odim_pvol/{RID}/{date.year}/vol/{RID}_{datestr}.pvol.zip"
+    file = f"/g/data/rq0/level_1/odim_pvol/{RID}/{date.year}/vol/{RID}_{datestr}.pvol.zip"
     if not os.path.exists(file):
         return None
 
