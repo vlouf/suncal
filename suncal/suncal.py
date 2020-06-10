@@ -95,7 +95,7 @@ def sunpos_reflectivity(infile,
 
     # Potential hit from the Sun. Read the whole volume now.
     try:
-        radar = pyart.aux_io.read_odim_h5(infile, delay_field_loading='True')
+        radar = pyart.aux_io.read_odim_h5(infile)
     except Exception:
         traceback.print_exc()
         return None
