@@ -5,6 +5,7 @@ Radar calibration code using the Sun as reference for position and power.
 @creator: Valentin Louf
 @creator_email: valentin.louf@bom.gov.au
 @creation: 21/02/2020
+@date: 10/06/2020
 '''
 import datetime
 import traceback
@@ -22,28 +23,27 @@ class SunNotFoundError(Exception):
     pass
 
 
-def corr_elev_refra(theta, n0=1.0004, k=4/3):
+def correct_refractivity(elevation: float, n0: float=1.000313, k: float=5/4) -> float:
     '''
-    Atmospheric refraction correction.
+    Atmospheric refraction correction. Eq. 9 and 10 from Holleman and Huuskonen (2013) 10.1002/rds.20030.
 
     Parameters:
     ===========
-    theta: float
-        Elevation angle
+    elevation: float
+        Elevation angle in deg.
     n0: float
         Reflective index of air.
     k: float
-        4/3 earth’s radius model (Doviak and Zrnic)
+        4/3 earth’s radius model.
 
     Returns:
     ========
     refra: float
-        Refraction corrected elevation angle.
+        Refraction angle in deg.
     '''
-    refra = ((k - 1) / (2 * k - 1) * np.cos(theta)
-            * (np.sqrt(np.sin(theta) ** 2 + (4 * k - 2) / (k - 1) * (n0 - 1))
-            - np.sin(theta)))
-    return refra
+    θ = np.deg2rad(elevation)
+    refra = ((k - 1) * np.cos(θ) * (np.sqrt(np.sin(θ) ** 2 + 2 / (k - 1) * (n0 - 1)) - np.sin(θ)))
+    return np.rad2deg(refra)
 
 
 def sunpos_reflectivity(infile,
@@ -114,10 +114,10 @@ def sunpos_reflectivity(infile,
     if all(zenith > zenith_threshold) or all(zenith < 0):
         raise SunNotFoundError('Sun not within scope.')
 
-    # Radar Elevation.
-    theta = np.deg2rad(radar.elevation['data'])
-    refra_angle = corr_elev_refra(theta)
-    elevation = radar.elevation['data'] + np.rad2deg(refra_angle)
+    # Correct ground-radar elevation from the refraction:
+    # Truth = Apparant - refraction angle cf. Holleman (2013)
+    elevation = radar.elevation['data'] - correct_refractivity(radar.elevation['data'])
+
     # Radar coordinates.
     r = radar.range['data']
     radar_azimuth_total = radar.azimuth['data'] % 360  # Corr. for neg azi in case of wrapping.
