@@ -4,7 +4,7 @@ National archive.
 
 @creator: Valentin Louf <valentin.louf@bom.gov.au>
 @institution: Monash University and Bureau of Meteorology
-@date: 18/03/2020
+@date: 12/06/2020
 
     buffer
     check_rid
@@ -52,6 +52,10 @@ def buffer(infile):
     try:
         rslt = suncal.sunpos_reflectivity(infile)
     except SunNotFoundError:
+        return None
+    except Exception:
+        print(f'Problem with file {infile}.')
+        traceback.print_exc()
         return None
 
     return rslt
