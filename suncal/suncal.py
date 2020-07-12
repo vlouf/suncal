@@ -5,9 +5,10 @@ Radar calibration code using the Sun as reference for position and power.
 @creator: Valentin Louf
 @creator_email: valentin.louf@bom.gov.au
 @creation: 21/02/2020
-@date: 10/06/2020
+@date: 12/07/2020
 '''
 import datetime
+import warnings
 import traceback
 
 import pyart
@@ -136,13 +137,15 @@ def sunpos_reflectivity(infile,
     except KeyError:
         is_zdr = False
 
-    pos = ((np.abs(azi2d - sunazi2d) < 5) &
-           (np.abs(elev2d - zenith2d) < 5) &
-           (R > 75e3) &
-           (elev2d > 0.5) &
-           (~np.isnan(reflectivity)) &
-           (reflectivity < 15) &
-           (zh < 10))
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        pos = ((np.abs(azi2d - sunazi2d) < 5) &
+            (np.abs(elev2d - zenith2d) < 5) &
+            (R > 75e3) &
+            (elev2d > 0.5) &
+            (~np.isnan(reflectivity)) &
+            (reflectivity < 15) &
+            (zh < 10))
 
     if np.sum(pos) == 0:
         raise SunNotFoundError('No solar hit found.')
