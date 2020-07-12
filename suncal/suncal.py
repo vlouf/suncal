@@ -26,7 +26,8 @@ class SunNotFoundError(Exception):
 
 def correct_refractivity(elevation: float, n0: float=1.000313, k: float=5/4) -> float:
     '''
-    Atmospheric refraction correction. Eq. 9 and 10 from Holleman and Huuskonen (2013) 10.1002/rds.20030.
+    Atmospheric refraction correction. Eq. 9 and 10 from Holleman and Huuskonen
+    (2013) 10.1002/rds.20030.
 
     Parameters:
     ===========
@@ -55,7 +56,8 @@ def sunpos_reflectivity(infile,
                         min_gate_altitude=1500,
                         max_gate_altitude=20000):
     '''
-    Extract Sun's reflectivity and radar azimuth/elevation angles of the solar hit.
+    Extract Sun's reflectivity and radar azimuth/elevation angles of the solar
+    hit. Will try to extract differential reflectivity too if it exists.
 
     Parameters:
     -----------
@@ -64,12 +66,14 @@ def sunpos_reflectivity(infile,
     zenith_threshold: int
         Maximum elevation angle for to look for the Sun.
     min_gate_altitude: int
-        Minimum altitude in meters for radar gate. Too small maybe contaminated with ground clutter.
+        Minimum altitude in meters for radar gate. Too small maybe contaminated
+        with ground clutter.
 
     Returns:
     --------
     data_sun: pandas.core.frame.DataFrame
-        Columns -> [sun_azimuth, sun_elevation, radar_elevation, radar_azimuth, reflectivity]
+        Columns -> [sun_azimuth, sun_elevation, radar_elevation, radar_azimuth,
+        reflectivity]
     '''
     if zenith_threshold <= 0:
         raise ValueError('Can not see the Sun at night.')
@@ -127,7 +131,6 @@ def sunpos_reflectivity(infile,
     _, elev2d = np.meshgrid(r, elevation)
     _, zenith2d = np.meshgrid(r, zenith)
     _, sunazi2d = np.meshgrid(r, sun_azimuth)
-    # altitude = radar.gate_z['data']
 
     reflectivity = radar.fields[refl_name]['data'].filled(np.NaN)
     zh = radar.fields[corr_refl_name]['data']
