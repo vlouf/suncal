@@ -76,9 +76,9 @@ def main():
 
     # Create output directories and check if output file exists
     outpath = os.path.join(OUTPUT_DATA_PATH, str(rid))
-    mkdir(path)
+    mkdir(outpath)
     outpath = os.path.join(outpath, DTIME.strftime("%Y"))
-    mkdir(path)
+    mkdir(outpath)
 
     outfilename = os.path.join(outpath, f"suncal.{rid}.{date}.csv")
     if os.path.isfile(outfilename):
@@ -121,8 +121,7 @@ def main():
 
 
 if __name__ == "__main__":
-    VOLS_ROOT_PATH = "/srv/data/s3car-server/vols"
-    OUTPUT_DATA_PATH = "/srv/data/s3car-server/solar/data"
+    VOLS_ROOT_PATH = "/srv/data/s3car-server/vols"    
 
     parser_description = (
         "Quality control of antenna alignment and receiver calibration using the sun."
@@ -139,16 +138,24 @@ if __name__ == "__main__":
     parser.add_argument(
         "-d",
         "--date",
-        dest="date",
-        default=None,
+        dest="date",        
         type=str,
         help="Value to be converted to Timestamp (str).",
         required=True,
+    )
+    parser.add_argument(
+        "-o",
+        "--output-dir",
+        dest="output",
+        default="/srv/data/s3car-server/solar/data",
+        type=str,
+        help="Directory for output data.",        
     )
 
     args = parser.parse_args()
     RID = args.rid
     DATE = args.date
+    OUTPUT_DATA_PATH = args.output
     try:
         # 2 advantages: check if provided dtime is valid and turns it into a timestamp object.
         DTIME = pd.Timestamp(DATE)
