@@ -101,7 +101,7 @@ def main():
     if len(flist) == 0:
         print(f"No file found for radar {RID} at {DATE}.")
         return None
-    print(f"Found {len(flist)} for radar {RID} at {DATE}.")
+    print(f"Found {len(flist)} files for radar {RID} for date {DATE}.")
 
     # Processing - It uses multiprocessing.
     bag = db.from_sequence(flist).map(driver)
@@ -114,7 +114,7 @@ def main():
     else:
         # Save the output data into a CSV file
         df = pd.concat(dataframe_list).reset_index()
-        df.to_csv(outfilename)
+        df.to_csv(outfilename, float_format="%g")
         print(f"Results saved in {outfilename}.")
 
     return None
