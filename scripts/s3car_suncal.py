@@ -1,3 +1,15 @@
+"""
+Quality control of antenna alignment and receiver calibration using the sun
+
+@creator: Valentin Louf <valentin.louf@bom.gov.au>
+@project: s3car-server
+@institution: Bureau of Meteorology
+@date: 22/07/2020
+
+    driver
+    mkdir
+    main
+"""
 # Python Standard Library
 import os
 import sys
