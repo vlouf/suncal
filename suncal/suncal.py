@@ -82,16 +82,18 @@ def sunpos_reflectivity(infile,
 
     # To save computing time, we check the first timestep only to determine
     # if it's worth to look into the dataset or we can skip it.
-    with netCDF4.Dataset(infile) as ncid:
-        lon = ncid['where'].lon
-        lat = ncid['where'].lat
-        try:
-            height = ncid['where'].height
-        except Exception:
-            height = 0
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        with netCDF4.Dataset(infile) as ncid:
+            lon = ncid['where'].lon
+            lat = ncid['where'].lat
+            try:
+                height = ncid['where'].height
+            except Exception:
+                height = 0
 
-        strtime = ncid['dataset1']['what'].startdate + ncid['dataset1']['what'].starttime
-        dtime = datetime.datetime.strptime(strtime, '%Y%m%d%H%M%S')
+            strtime = ncid['dataset1']['what'].startdate + ncid['dataset1']['what'].starttime
+            dtime = datetime.datetime.strptime(strtime, '%Y%m%d%H%M%S')
 
     # Compute Sun's position for given lat/lon and time.
     sun_azimuth, zenith, _, _, _ = sunpos(dtime, lat, lon, height).T
@@ -122,7 +124,18 @@ def sunpos_reflectivity(infile,
     # Correct ground-radar elevation from the refraction:
     # Truth = Apparant - refraction angle cf. Holleman (2013)
     elevation = radar.elevation['data'] - correct_refractivity(radar.elevation['data'])
-
+    
+    reflectivity = radar.fields[refl_name]['data'].filled(np.NaN)
+    zh = radar.fields[corr_refl_name]['data'].filled(np.NaN)
+    try:
+        zdr = radar.fields[zdr_name]['data']
+        is_zdr = True
+    except KeyError:
+        is_zdr = False
+    
+    # Ray filling ratio, i.e. number of non-NA gate in ray
+    fmin = 1 - np.sum(np.isnan(reflectivity), axis=1) / reflectivity.shape[1]
+    
     # Radar coordinates.
     r = radar.range['data']
     radar_azimuth_total = radar.azimuth['data'] % 360  # Corr. for neg azi in case of wrapping.
@@ -131,24 +144,17 @@ def sunpos_reflectivity(infile,
     _, elev2d = np.meshgrid(r, elevation)
     _, zenith2d = np.meshgrid(r, zenith)
     _, sunazi2d = np.meshgrid(r, sun_azimuth)
-
-    reflectivity = radar.fields[refl_name]['data'].filled(np.NaN)
-    zh = radar.fields[corr_refl_name]['data']
-    try:
-        zdr = radar.fields[zdr_name]['data']
-        is_zdr = True
-    except KeyError:
-        is_zdr = False
+    _, fmin2d = np.meshgrid(r, fmin)
 
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         pos = ((np.abs(azi2d - sunazi2d) < 5) &
             (np.abs(elev2d - zenith2d) < 5) &
-            (R > 75e3) &
-            (elev2d > 0.5) &
+            (R > 50e3) &
+            (elev2d > 0.9) &
             (~np.isnan(reflectivity)) &
             (reflectivity < 15) &
-            (zh < 10))
+            (np.isnan(zh) | (zh < 10)))
 
     if np.sum(pos) == 0:
         raise SunNotFoundError('No solar hit found.')
@@ -159,6 +165,7 @@ def sunpos_reflectivity(infile,
                  'sun_elevation': zenith2d[pos],
                  'radar_elevation': elev2d[pos],
                  'radar_azimuth': azi2d[pos],
+                 'fmin': fmin2d[pos],
                  'reflectivity': reflectivity[pos]}
     if is_zdr:
         data_dict.update({'differential_reflectivity': zdr[pos]})
