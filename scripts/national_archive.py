@@ -150,7 +150,7 @@ def savedata(rslt_list, path):
     path: str
         Output directory.
     '''
-    df = pd.concat(rslt_list).reset_index()
+    df = pd.concat(rslt_list, ignore_index=True)
     dtime = df.time[0].strftime('%Y%m%d')
     year = df.time[0].strftime('%Y')
 
@@ -160,7 +160,7 @@ def savedata(rslt_list, path):
     mkdir(path)
 
     outfilename = os.path.join(path, f'suncal.{RID}.{dtime}.csv')
-    df.to_csv(outfilename)
+    df.to_csv(outfilename, float_format='%g')
     print(crayons.green(f'{len(df)} solar hits on {dtime}.'))
     print(crayons.green(f'Results saved in {outfilename}.'))
 
