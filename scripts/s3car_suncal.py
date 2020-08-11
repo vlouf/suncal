@@ -4,7 +4,7 @@ Quality control of antenna alignment and receiver calibration using the sun
 @creator: Valentin Louf <valentin.louf@bom.gov.au>
 @project: s3car-server
 @institution: Bureau of Meteorology
-@date: 22/07/2020
+@date: 11/08/2020
 
     driver
     mkdir
@@ -113,7 +113,7 @@ def main():
         return None
     else:
         # Save the output data into a CSV file
-        df = pd.concat(dataframe_list).reset_index()
+        df = pd.concat(dataframe_list, ignore_index=True)
         df.to_csv(outfilename, float_format="%g")
         print(f"Results saved in {outfilename}.")
 

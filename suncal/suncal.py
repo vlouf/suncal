@@ -5,7 +5,7 @@ Radar calibration code using the Sun as reference for position and power.
 @creator: Valentin Louf
 @creator_email: valentin.louf@bom.gov.au
 @creation: 21/02/2020
-@date: 12/07/2020
+@date: 11/08/2020
 '''
 import datetime
 import warnings
@@ -124,7 +124,7 @@ def sunpos_reflectivity(infile,
     # Correct ground-radar elevation from the refraction:
     # Truth = Apparant - refraction angle cf. Holleman (2013)
     elevation = radar.elevation['data'] - correct_refractivity(radar.elevation['data'])
-    
+
     reflectivity = radar.fields[refl_name]['data'].filled(np.NaN)
     zh = radar.fields[corr_refl_name]['data'].filled(np.NaN)
     try:
@@ -132,10 +132,10 @@ def sunpos_reflectivity(infile,
         is_zdr = True
     except KeyError:
         is_zdr = False
-    
+
     # Ray filling ratio, i.e. number of non-NA gate in ray
     fmin = 1 - np.sum(np.isnan(reflectivity), axis=1) / reflectivity.shape[1]
-    
+
     # Radar coordinates.
     r = radar.range['data']
     radar_azimuth_total = radar.azimuth['data'] % 360  # Corr. for neg azi in case of wrapping.
