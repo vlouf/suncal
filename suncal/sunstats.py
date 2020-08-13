@@ -177,6 +177,31 @@ def sun_fit_5P(x, y, z, beamwidth=1, dr=0.25):
 
 
 def solar_statistics(solar_file, beamwidth=1, dr=0.25, fmin_thld=0.3, do_5P=False):
+    """
+    This function performs the model inversion and statistics for the solar 
+    positioning and power monitoring. It reads the file produced by the suncal
+    function and output the azimuth and elevation offset as well as the 
+    measured sun power by the radar.
+
+    Parameters:
+    ===========
+    solar_file: str
+        CSV file produced by the suncal function.
+    beamwidth: float
+        Angular beamwidth (degree).
+    dr: float
+        Gate spacing in km.
+    fmin_thld: float
+        Threshold for the minimum ratio of valid solar interference data in ray
+    do_5P: bool
+        Doing the 5-parameters model inversion (the 3P technique is done by 
+        default).
+
+    Returns:
+    ========
+    solar_stats: pandas.Dataframe
+        Dataframe of the solar statistics (position/power/date/error)
+    """
     try:
         df = pd.read_csv(
             solar_file, 
@@ -225,5 +250,7 @@ def solar_statistics(solar_file, beamwidth=1, dr=0.25, fmin_thld=0.3, do_5P=Fals
     rslt['sun'] = df.sun_power.median()
     rslt['azi_med'] = df.delta_azi.median()
     rslt['elev_med'] = df.delta_elev.median()
+
+    solar_stats = pd.DataFrame(rslt, index=[df.index[0].date()])
     
-    return pd.DataFrame(rslt, index=[df.index[0].date()])
+    return solar_stats
