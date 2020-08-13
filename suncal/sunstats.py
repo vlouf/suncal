@@ -6,15 +6,51 @@ from sklearn import linear_model
 from sklearn.metrics import r2_score
 
 
-def mad(x):
+def mad_filter(x, sigma=1.48):
+    """
+    Filter data using the median absolute deviation (MAD).
+
+    Parameters:
+    ==========
+    x: ndarray
+        Estimator
+    sigma: float
+        Threshold
+
+    Returns:
+    ========
+    umad: ndarray
+        Median absolute deviation of the estimator x with outliers set to NaN.
+    """
     xmed = np.median(x)
     umad = np.abs(x - xmed)
     mad = np.median(umad)
-    umad[umad >= 1.48 * mad] = np.NaN
+    umad[umad >= sigma * mad] = np.NaN
     return umad
 
 
 def solar_widths_scan(beamwidth_h, beamwidth_v, dr):
+    """
+    Calculate the beam effective width. The effective scanning sun image width
+    in reception may be estimated from the solution of the transcendental
+    equation (cf. section 7.8 in Doviak and Zrnic - 2006):
+
+    Parameters:
+    ===========
+    beamwidth_h: float
+        Azimuthal beamwidth (degree).
+    beamwidth_v: float
+        Elevation beamwidth (degree).
+    dr: float
+        Gate spacing in *km*!
+
+    Returns:
+    ========
+    dx_eff: float
+        Effective azimuthal width of the sun
+    dy_eff: float
+        Effective elevation width of the sun
+    """
     a = np.sqrt(4 * np.log(2)) / beamwidth_h
     b = a * (dr / 2)
 
@@ -28,16 +64,45 @@ def solar_widths_scan(beamwidth_h, beamwidth_v, dr):
     return dx_eff, dy_eff
 
 
-def sun_fit_3P(df, beamwidth=1, dr=0.25)    :
-    if len(df) <= 3:
+def sun_fit_3P(x, y, z, beamwidth=1, dr=0.25):
+    """
+    Retrieval using the inversion of a theoretical model of the solar power at
+    the top of the atmosphere and of the systematic antenna pointing biases in
+    azimuth and elevation (x0, y0). The model herein is a three parameters
+    linear function. The difference with the 5P function is that the
+    sun-antenna convolution width is constant here.
+
+    Parameters:
+    ===========
+    x: ndarray
+        Relative position of the azimuth with respect to the radar as reference
+        (Az radar - Az Sun).
+    y: ndarray
+        Relative position of the elevation with respect to the radar as
+        reference (El radar - El Sun).
+    z: ndarray
+        Measured power of the Sun.
+    beamwidth: float
+        Angular beamwidth (degree).
+    dr: float
+        Gate spacing in m.
+
+    Returns:
+    ========
+    x0: float
+        Original target azimuth after model inversion.
+    y0: float
+        Original target elevation after model inversion.
+    p0: float
+        Sun interference power after model inversion.
+    """
+    if len(x) <= 3:
         return None
+
     dx_eff, dy_eff = solar_widths_scan(beamwidth, beamwidth, dr)
     a1 = - 40 * np.log10(2) * (1 / (dx_eff ** 2))
     a2 = - 40 * np.log10(2) * (1 / (dy_eff ** 2))
 
-    x = df.delta_azi
-    y = df.delta_elev
-    z = df.sun_power
     z = z - a1 * x ** 2 - a2 * y ** 2
 
     inx = np.array([x.T, y.T, np.ones_like(x).T]).T
@@ -53,13 +118,40 @@ def sun_fit_3P(df, beamwidth=1, dr=0.25)    :
     return x0, y0, p0, r_sq
 
 
-def sun_fit_5P(df, beamwidth=1, dr=0.25)    :
-    if len(df) <= 5:
-        return None
+def sun_fit_5P(x, y, z, beamwidth=1, dr=0.25):
+    """
+    Retrieval using the inversion of a theoretical model of the solar power at
+    the top of the atmosphere and of the systematic antenna pointing biases in
+    azimuth and elevation (x0, y0). The model herein is a five parameters
+    quadratic function.  The difference with the 3P function is that the
+    sun-antenna convolution width is not constant here.
 
-    x = df.delta_azi
-    y = df.delta_elev
-    z = df.sun_power
+    Parameters:
+    ===========
+    x: ndarray
+        Relative position of the azimuth with respect to the radar as reference
+        (Az radar - Az Sun).
+    y: ndarray
+        Relative position of the elevation with respect to the radar as
+        reference (El radar - El Sun).
+    z: ndarray
+        Measured power of the Sun.
+    beamwidth: float
+        Angular beamwidth (degree).
+    dr: float
+        Gate spacing in m.
+
+    Returns:
+    ========
+    x0: float
+        Original target azimuth after model inversion.
+    y0: float
+        Original target elevation after model inversion.
+    p0: float
+        Sun interference power after model inversion.
+    """
+    if len(x) <= 5:
+        return None
 
     inx = np.array([x.T ** 2, y.T ** 2, x.T, y.T, np.ones_like(x).T]).T
     reg = linear_model.LinearRegression()
