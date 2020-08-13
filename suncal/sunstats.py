@@ -25,7 +25,7 @@ from sklearn import linear_model
 from sklearn.metrics import r2_score
 
 
-def mad_filter(x, sigma=1.48):
+def mad_filter(x, σ=1.48):
     """
     Filter data using the median absolute deviation (MAD).
 
@@ -44,7 +44,7 @@ def mad_filter(x, sigma=1.48):
     xmed = np.median(x)
     umad = np.abs(x - xmed)
     mad = np.median(umad)
-    umad[umad >= sigma * mad] = np.NaN
+    umad[umad >= σ * mad] = np.NaN
     return umad
 
 
