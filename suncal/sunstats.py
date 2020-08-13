@@ -93,7 +93,7 @@ def sun_fit_3P(x, y, z, beamwidth=1, dr=0.25):
     beamwidth: float
         Angular beamwidth (degree).
     dr: float
-        Gate spacing in m.
+        Gate spacing in km.
 
     Returns:
     ========
@@ -147,7 +147,7 @@ def sun_fit_5P(x, y, z, beamwidth=1, dr=0.25):
     beamwidth: float
         Angular beamwidth (degree).
     dr: float
-        Gate spacing in m.
+        Gate spacing in km.
 
     Returns:
     ========
