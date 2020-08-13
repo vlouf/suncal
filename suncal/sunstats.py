@@ -105,6 +105,8 @@ def sun_fit_3P(x, y, z, beamwidth=1, dr=0.25):
         Original target elevation after model inversion.
     p0: float
         Sun interference power after model inversion.
+    r_sq: float
+        Coefficient of determination (R-squared).
     """
     if len(x) <= 3:
         return None
@@ -159,6 +161,8 @@ def sun_fit_5P(x, y, z, beamwidth=1, dr=0.25):
         Original target elevation after model inversion.
     p0: float
         Sun interference power after model inversion.
+    r_sq: float
+        Coefficient of determination (R-squared).
     """
     if len(x) <= 5:
         return None
@@ -178,9 +182,9 @@ def sun_fit_5P(x, y, z, beamwidth=1, dr=0.25):
 
 def solar_statistics(solar_file, beamwidth=1, dr=0.25, fmin_thld=0.3, do_5P=False):
     """
-    This function performs the model inversion and statistics for the solar 
+    This function performs the model inversion and statistics for the solar
     positioning and power monitoring. It reads the file produced by the suncal
-    function and output the azimuth and elevation offset as well as the 
+    function and output the azimuth and elevation offset as well as the
     measured sun power by the radar.
 
     Parameters:
@@ -194,7 +198,7 @@ def solar_statistics(solar_file, beamwidth=1, dr=0.25, fmin_thld=0.3, do_5P=Fals
     fmin_thld: float
         Threshold for the minimum ratio of valid solar interference data in ray
     do_5P: bool
-        Doing the 5-parameters model inversion (the 3P technique is done by 
+        Doing the 5-parameters model inversion (the 3P technique is done by
         default).
 
     Returns:
@@ -204,9 +208,9 @@ def solar_statistics(solar_file, beamwidth=1, dr=0.25, fmin_thld=0.3, do_5P=Fals
     """
     try:
         df = pd.read_csv(
-            solar_file, 
-            parse_dates=['time'], 
-            index_col=['time'], 
+            solar_file,
+            parse_dates=['time'],
+            index_col=['time'],
             usecols=[
                 'range',
                 'time',
@@ -221,36 +225,36 @@ def solar_statistics(solar_file, beamwidth=1, dr=0.25, fmin_thld=0.3, do_5P=Fals
     except Exception:
         traceback.print_exc()
         return None
-    
+
     df = df[df.fmin > fmin_thld]
     df['sun_power'] = df.reflectivity - 20 * np.log10(df.range) - 10 * np.log10(0.5) - 2 * 0.017 * df.range / 1e3
-    
+
     # Remove outliers
     mad_val = mad_filter(df['sun_power'])
     df['sun_power'][np.isnan(mad_val)] = np.NaN
     df = df.dropna()
 
     df['delta_elev'] = df['radar_elevation'] - df['sun_elevation']
-    df['delta_azi'] = df['radar_azimuth'] - df['sun_azimuth']    
-        
+    df['delta_azi'] = df['radar_azimuth'] - df['sun_azimuth']
+
     rslt = {"azi": np.NaN,
             "elev": np.NaN,
             "sun": np.NaN}
-    
+
     if len(df) < 5:
         return None
-    
+
     x = df.delta_azi
     y = df.delta_elev
     z = df.sun_power
     if do_5P:
         rslt['azi_5P'], rslt['elev_5P'], rslt['p0_5P'], rslt['r_sq_5P'] = sun_fit_5P(x, y, z, beamwidth=beamwidth, dr=dr)
-        
+
     rslt['azi'], rslt['elev'], rslt['p0'], rslt['r_sq'] = sun_fit_3P(x, y, z, beamwidth=beamwidth, dr=dr)
     rslt['sun'] = df.sun_power.median()
     rslt['azi_med'] = df.delta_azi.median()
     rslt['elev_med'] = df.delta_elev.median()
 
     solar_stats = pd.DataFrame(rslt, index=[df.index[0].date()])
-    
+
     return solar_stats
