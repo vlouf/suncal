@@ -1,3 +1,43 @@
+"""
+Sun position algorithm (spa). Compute the sun ephemerides.
+
+I am not the creator of this algorithm, it was found on GitHub under a MIT
+license. Unfortunately I don't remember where...
+
+@title: spa
+@date: 13/08/2020
+
+.. autosummary::
+    :toctree: generated/
+
+    calendar_time
+    julian_day
+    julian_ephemeris_day
+    julian_century
+    julian_millennium
+    heliocentric_longitude
+    heliocentric_latitude
+    heliocentric_radius
+    heliocentric_position
+    geocentric_position
+    ecliptic_obliquity
+    nutation_obliquity
+    abberation_correction
+    sun_longitude
+    greenwich_sidereal_time
+    sun_ra_decl
+    sun_topo_ra_decl_hour
+    sun_topo_azimuth_zenith
+    norm_lat_lon
+    topo_pos
+    pos
+    julian_day
+    arcdist
+    observed_sunpos
+    topocentric_sunpos
+    sunpos
+"""
+from datetime import datetime
 import numpy as np
 
 
@@ -489,7 +529,7 @@ def julian_day(dt):
 
 def arcdist(p0, p1, radians=False):
     """Angular distance between azimuth,zenith pairs
-    
+
     Parameters
     ----------
     p0 : array_like, shape (..., 2)
