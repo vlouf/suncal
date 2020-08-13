@@ -108,8 +108,8 @@ def sun_fit_3P(x, y, z, beamwidth=1, dr=0.25):
         return None
 
     dx_eff, dy_eff = solar_widths_scan(beamwidth, beamwidth, dr)
-    a1 = - 40 * np.log10(2) * (1 / (dx_eff ** 2))
-    a2 = - 40 * np.log10(2) * (1 / (dy_eff ** 2))
+    a1 = -40 * np.log10(2) * (1 / (dx_eff ** 2))
+    a2 = -40 * np.log10(2) * (1 / (dy_eff ** 2))
 
     z = z - a1 * x ** 2 - a2 * y ** 2
 
@@ -121,7 +121,7 @@ def sun_fit_3P(x, y, z, beamwidth=1, dr=0.25):
 
     x0 = -b1 / (2 * a1)
     y0 = -b2 / (2 * a2)
-    p0 = c - (b1 ** 2)/(4*a1) - (b2 ** 2)/(4*a2)
+    p0 = c - (b1 ** 2) / (4 * a1) - (b2 ** 2) / (4 * a2)
 
     return x0, y0, p0, r_sq
 
@@ -169,6 +169,6 @@ def sun_fit_5P(x, y, z, beamwidth=1, dr=0.25):
 
     x0 = -b1 / (2 * a1)
     y0 = -b2 / (2 * a2)
-    p0 = c - (b1 ** 2)/(4*a1) - (b2 ** 2)/(4*a2)
+    p0 = c - (b1 ** 2) / (4 * a1) - (b2 ** 2) / (4 * a2)
 
     return x0, y0, p0, r_sq
