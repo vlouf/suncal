@@ -5,6 +5,15 @@ Model inversions of the daily solar interferences detected.
 @creator: Valentin Louf
 @creator_email: valentin.louf@bom.gov.au
 @date: 13/08/2020
+
+.. autosummary::
+    :toctree: generated/
+
+    mad_filter
+    solar_widths_scan
+    sun_fit_3P
+    sun_fit_5P
+    solar_statistics
 """
 import traceback
 from math import erf
