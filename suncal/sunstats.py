@@ -1,3 +1,11 @@
+"""
+Model inversions of the daily solar interferences detected.
+
+@title: sunstats
+@creator: Valentin Louf
+@creator_email: valentin.louf@bom.gov.au
+@date: 13/08/2020
+"""
 from math import erf
 
 import numpy as np
