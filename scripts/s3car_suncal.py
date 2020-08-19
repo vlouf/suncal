@@ -4,7 +4,7 @@ Quality control of antenna alignment and receiver calibration using the sun
 @creator: Valentin Louf <valentin.louf@bom.gov.au>
 @project: s3car-server
 @institution: Bureau of Meteorology
-@date: 11/08/2020
+@date: 19/08/2020
 
     driver
     mkdir
@@ -26,6 +26,35 @@ import dask.bag as db
 
 import suncal
 from suncal import SunNotFoundError
+
+
+def check_total_power_presence(infile: str) -> bool:
+    """
+    Check for the presence of the Uncorrected Reflectivity fields in the ODIM
+    h5 dataset. By convention the field name is TH.
+
+    Parameter:
+    ==========
+    infile: str
+        Input ODIM H5 file.
+
+    Returns:
+    ========
+    True/False presence of the uncorrected reflectivity.
+    """
+    with netCDF4.Dataset(infile) as ncid:
+        groups = ncid['/dataset1'].groups.keys()
+        var = []
+        for group in groups:
+            if "data" not in group:
+                continue
+            name = ncid[f'/dataset1/{group}/what'].getncattr('quantity')
+            var.append(name)
+
+    if 'TH' in var:
+        return True
+    else:
+        return False
 
 
 def driver(infile: str):
@@ -103,7 +132,14 @@ def main():
     if len(flist) == 0:
         print(f"No file found for radar {RID} at {DATE}.")
         return None
-    print(f"Found {len(flist)} files for radar {RID} for date {DATE}.")
+
+    # Check for the presence of the Uncorrected reflectivity and filter out files without it.
+    goodfiles = [*map(check_total_power_presence, flist)]
+    if not any(goodfiles):
+        print(f"The uncorrected reflectivity field is not present for radar {RID}.")
+        return None
+    flist = [f for f, g in zip(flist, goodfiles) if g is True]
+    print(f"Found {len(flist)} files with the uncorrected reflectivity for radar {RID} for date {DATE}.")
 
     # Processing - It uses multiprocessing.
     bag = db.from_sequence(flist).map(driver)
@@ -122,8 +158,8 @@ def main():
     return None
 
 
-if __name__ == "__main__":    
-    VOLS_ROOT_PATH = "/srv/data/s3car-server/vols"    
+if __name__ == "__main__":
+    VOLS_ROOT_PATH = "/srv/data/s3car-server/vols"
 
     parser_description = (
         "Quality control of antenna alignment and receiver calibration using the sun."
@@ -140,7 +176,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-d",
         "--date",
-        dest="date",        
+        dest="date",
         type=str,
         help="Value to be converted to Timestamp (str).",
         required=True,
@@ -151,7 +187,7 @@ if __name__ == "__main__":
         dest="output",
         default="/srv/data/s3car-server/solar/data",
         type=str,
-        help="Directory for output data.",        
+        help="Directory for output data.",
     )
 
     args = parser.parse_args()
