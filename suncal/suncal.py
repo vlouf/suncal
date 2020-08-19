@@ -110,11 +110,13 @@ def sunpos_reflectivity(
         raise SunNotFoundError("Sun not within scope.")
 
     # Potential hit from the Sun. Read the whole volume now.
-    try:
-        radar = pyart.aux_io.read_odim_h5(infile)
-    except Exception:
-        traceback.print_exc()
-        return None
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        try:
+            radar = pyart.aux_io.read_odim_h5(infile)
+        except Exception:
+            traceback.print_exc()
+            return None
 
     dtime = cftime.num2pydate(radar.time["data"], radar.time["units"])
     lat = radar.latitude["data"]
