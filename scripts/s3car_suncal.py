@@ -16,9 +16,11 @@ import sys
 import glob
 import argparse
 import datetime
+import warnings
 import traceback
 
 # Other libraries.
+import netCDF4
 import pandas as pd
 import dask.bag as db
 
@@ -120,7 +122,7 @@ def main():
     return None
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":    
     VOLS_ROOT_PATH = "/srv/data/s3car-server/vols"    
 
     parser_description = (
@@ -163,4 +165,6 @@ if __name__ == "__main__":
         traceback.print_exc()
         sys.exit()
 
-    main()
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        main()
