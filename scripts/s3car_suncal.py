@@ -4,7 +4,7 @@ Quality control of antenna alignment and receiver calibration using the sun
 @creator: Valentin Louf <valentin.louf@bom.gov.au>
 @project: s3car-server
 @institution: Bureau of Meteorology
-@date: 19/08/2020
+@date: 25/08/2020
 
     driver
     mkdir
@@ -108,9 +108,6 @@ def main():
     # Create output directories and check if output file exists
     outpath = os.path.join(OUTPUT_DATA_PATH, str(rid))
     mkdir(outpath)
-    outpath = os.path.join(outpath, DTIME.strftime("%Y"))
-    mkdir(outpath)
-
     outfilename = os.path.join(outpath, f"suncal.{rid}.{date}.csv")
     if os.path.isfile(outfilename):
         print("Output file already exists. Doing nothing.")
