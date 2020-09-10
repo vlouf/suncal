@@ -4,7 +4,7 @@ National archive.
 
 @creator: Valentin Louf <valentin.louf@bom.gov.au>
 @institution: Monash University and Bureau of Meteorology
-@date: 11/08/2020
+@date: 10/09/2020
 
     buffer
     check_rid
@@ -35,7 +35,7 @@ import suncal
 from suncal import SunNotFoundError
 
 
-def buffer(infile):
+def buffer(infile: str):
     """
     Buffer function to catch and kill errors about missing Sun hit.
 
@@ -61,15 +61,15 @@ def buffer(infile):
     return rslt
 
 
-def check_rid():
+def check_rid() -> bool:
     """
     Check if the Radar ID provided exists.
     """
-    indir = f"/g/data/rq0/level_1/odim_pvol/{RID}"
+    indir = f"/g/data/rq0/level_1/odim_pvol/{RID:02}"
     return os.path.exists(indir)
 
 
-def extract_zip(inzip, path):
+def extract_zip(inzip: str, path: str):
     """
     Extract content of a zipfile inside a given directory.
 
@@ -107,15 +107,15 @@ def get_radar_archive_file(date):
         Radar archive if it exists at the given date.
     """
     datestr = date.strftime("%Y%m%d")
-    file = f"/g/data/rq0/level_1/odim_pvol/{RID}/{date.year}/vol/{RID}_{datestr}.pvol.zip"
-    
+    file = f"/g/data/rq0/level_1/odim_pvol/{RID:02}/{date.year}/vol/{RID:02}_{datestr}.pvol.zip"
+
     if not os.path.exists(file):
         return None
 
     return file
 
 
-def mkdir(path):
+def mkdir(path: str):
     """
     Create the DIRECTORY(ies), if they do not already exist
     """
@@ -155,7 +155,7 @@ def savedata(rslt_list, path):
     dtime = df.time[0].strftime("%Y%m%d")
     year = df.time[0].strftime("%Y")
 
-    path = os.path.join(path, RID)
+    path = os.path.join(path, str(RID))
     mkdir(path)
     path = os.path.join(path, year)
     mkdir(path)
@@ -226,7 +226,7 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    RID = f"{args.rid:02}"
+    RID = args.rid
     START_DATE = args.start_date
     END_DATE = args.end_date
     OUTPATH = args.output
