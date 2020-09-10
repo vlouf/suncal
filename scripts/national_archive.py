@@ -230,7 +230,7 @@ if __name__ == "__main__":
     START_DATE = args.start_date
     END_DATE = args.end_date
     OUTPATH = args.output
-    ZIPDIR = "/scratch/kl02/vhl548/unzipdir/"
+    ZIPDIR = "/scratch/kl02/vhl548/unzipdir_solar/"
 
     if not check_rid():
         parser.error("Invalid Radar ID.")
