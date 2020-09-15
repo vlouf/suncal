@@ -153,11 +153,8 @@ def savedata(rslt_list, path):
     """
     df = pd.concat(rslt_list, ignore_index=True)
     dtime = df.time[0].strftime("%Y%m%d")
-    year = df.time[0].strftime("%Y")
 
     path = os.path.join(path, str(RID))
-    mkdir(path)
-    path = os.path.join(path, year)
     mkdir(path)
 
     outfilename = os.path.join(path, f"suncal.{RID}.{dtime}.csv")
