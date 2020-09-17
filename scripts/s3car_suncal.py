@@ -83,7 +83,7 @@ def driver(infile: str):
     return rslt
 
 
-def mkdir(path: str):
+def mkdir(path: str) -> None:
     """
     Make directory if it does not already exist.
     """
@@ -94,7 +94,7 @@ def mkdir(path: str):
     return None
 
 
-def main():
+def main() -> None:
     """
     Structure:
     1/ Create output directories (if does not exists)
