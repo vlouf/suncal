@@ -26,6 +26,8 @@ import datetime
 import warnings
 import traceback
 
+from typing import List
+
 import crayons
 import numpy as np
 import pandas as pd
@@ -69,7 +71,7 @@ def check_rid() -> bool:
     return os.path.exists(indir)
 
 
-def extract_zip(inzip: str, path: str):
+def extract_zip(inzip: str, path: str) -> List[str]:
     """
     Extract content of a zipfile inside a given directory.
 
@@ -91,7 +93,7 @@ def extract_zip(inzip: str, path: str):
     return namelist
 
 
-def get_radar_archive_file(date):
+def get_radar_archive_file(date) -> str:
     """
     Return the archive containing the radar file for a given radar ID and a
     given date.
@@ -115,7 +117,7 @@ def get_radar_archive_file(date):
     return file
 
 
-def mkdir(path: str):
+def mkdir(path: str) -> None:
     """
     Create the DIRECTORY(ies), if they do not already exist
     """
@@ -127,7 +129,7 @@ def mkdir(path: str):
     return None
 
 
-def remove(flist):
+def remove(flist: List[str]) -> None:
     """
     Remove file if it exists.
     """
@@ -140,7 +142,7 @@ def remove(flist):
     return None
 
 
-def savedata(rslt_list, path):
+def savedata(rslt_list: List, path: str) -> None:
     """
     Save the output data into a CSV file compatible with pandas.
 
@@ -165,7 +167,7 @@ def savedata(rslt_list, path):
     return None
 
 
-def main(date_range):
+def main(date_range: List) -> None:
     for date in date_range:
         zipfile = get_radar_archive_file(date)
         if zipfile is None:
