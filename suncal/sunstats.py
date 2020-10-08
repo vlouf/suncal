@@ -4,7 +4,7 @@ Model inversions of the daily solar interferences detected.
 @title: sunstats
 @creator: Valentin Louf
 @creator_email: valentin.louf@bom.gov.au
-@date: 13/08/2020
+@date: 08/10/2020
 
 .. autosummary::
     :toctree: generated/
@@ -151,10 +151,10 @@ def sun_fit_5P(x, y, z, beamwidth=1, dr=0.25):
     ===========
     x: ndarray
         Relative position of the azimuth with respect to the radar as reference
-        (Az radar - Az Sun).
+        (Az Sun - Az radar).
     y: ndarray
         Relative position of the elevation with respect to the radar as
-        reference (El radar - El Sun).
+        reference (El Sun - El radar).
     z: ndarray
         Measured power of the Sun.
     beamwidth: float
@@ -243,8 +243,8 @@ def solar_statistics(solar_file, beamwidth=1, dr=0.25, fmin_thld=0.3, do_5P=Fals
     df["sun_power"][np.isnan(mad_val)] = np.NaN
     df = df.dropna()
 
-    df["delta_elev"] = df["radar_elevation"] - df["sun_elevation"]
-    df["delta_azi"] = df["radar_azimuth"] - df["sun_azimuth"]
+    df["delta_elev"] = df["sun_elevation"] - df["radar_elevation"]
+    df["delta_azi"] = df["sun_azimuth"] - df["radar_azimuth"]
 
     rslt = {"azi": np.NaN, "elev": np.NaN, "sun": np.NaN}
 
