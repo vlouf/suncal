@@ -459,7 +459,8 @@ class _sp:
             np.arcsin(np.sin(phi) * np.sin(dr) + np.cos(phi) * np.cos(dr) * np.cos(Hr))
         )
         tmp = np.deg2rad(e0 + 10.3 / (e0 + 5.11))
-        delta_e = (P / 1010.0) * (283.0 / (273 + T)) * (1.02 / (60 * np.tan(tmp)))
+        # delta_e = (P / 1010.0) * (283.0 / (273 + T)) * (1.02 / (60 * np.tan(tmp)))
+        delta_e = 0
         e = e0 + delta_e
         zenith = 90 - e
 

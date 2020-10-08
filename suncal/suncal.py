@@ -134,7 +134,7 @@ def sunpos_reflectivity(
 
     # Correct ground-radar elevation from the refraction:
     # Truth = Apparant - refraction angle cf. Holleman (2013)
-    elevation = radar.elevation["data"]  # - correct_refractivity(radar.elevation["data"])
+    elevation = radar.elevation["data"] - correct_refractivity(radar.elevation["data"])
 
     reflectivity = radar.fields[refl_name]["data"].filled(np.NaN)
     zh = radar.fields[corr_refl_name]["data"].filled(np.NaN)
