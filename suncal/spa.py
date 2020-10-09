@@ -2,10 +2,10 @@
 Sun position algorithm (spa). Compute the sun ephemerides.
 
 I am not the creator of this algorithm, it was found on GitHub under a MIT
-license. Unfortunately I don't remember where...
+license: https://github.com/s-bear/sun-position
 
 @title: spa
-@date: 13/08/2020
+@date: 09/10/2020
 
 .. autosummary::
     :toctree: generated/

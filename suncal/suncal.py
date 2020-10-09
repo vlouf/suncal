@@ -5,7 +5,7 @@ Radar calibration code using the Sun as reference for position and power.
 @creator: Valentin Louf
 @creator_email: valentin.louf@bom.gov.au
 @creation: 21/02/2020
-@date: 13/08/2020
+@date: 09/10/2020
 
 .. autosummary::
     :toctree: generated/
