@@ -201,7 +201,7 @@ if __name__ == "__main__":
         "-o",
         "--output",
         dest="output",
-        default="/scratch/kl02/vhl548/solar_output/",
+        default="/scratch/kl02/vhl548/s3car-server/solar/",
         type=str,
         help="Output directory",
     )
@@ -229,7 +229,7 @@ if __name__ == "__main__":
     START_DATE = args.start_date
     END_DATE = args.end_date
     OUTPATH = args.output
-    ZIPDIR = "/scratch/kl02/vhl548/unzipdir_solar/"
+    ZIPDIR = "/scratch/kl02/vhl548/unzipdir/"
 
     if not check_rid():
         parser.error("Invalid Radar ID.")
