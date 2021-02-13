@@ -4,7 +4,7 @@ Model inversions of the daily solar interferences detected.
 @title: sunstats
 @creator: Valentin Louf
 @creator_email: valentin.louf@bom.gov.au
-@date: 08/10/2020
+@date: 13/02/2021
 
 .. autosummary::
     :toctree: generated/
@@ -17,15 +17,15 @@ Model inversions of the daily solar interferences detected.
 """
 import traceback
 from math import erf
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
 from scipy.optimize import brentq as uniroot
 from sklearn import linear_model
-from sklearn.metrics import r2_score
 
 
-def mad_filter(x, σ=1.48):
+def mad_filter(x: np.ndarray, σ: float = 1.48) -> np.ndarray:
     """
     Filter data using the median absolute deviation (MAD).
 
@@ -48,7 +48,7 @@ def mad_filter(x, σ=1.48):
     return umad
 
 
-def solar_widths_scan(beamwidth_h, beamwidth_v, dr):
+def solar_widths_scan(beamwidth_h: float, beamwidth_v: float, dr: float) -> Tuple[float, float]:
     """
     Calculate the beam effective width. The effective scanning sun image width
     in reception may be estimated from the solution of the transcendental
@@ -83,7 +83,9 @@ def solar_widths_scan(beamwidth_h, beamwidth_v, dr):
     return dx_eff, dy_eff
 
 
-def sun_fit_3P(x, y, z, beamwidth=1, dr=0.25):
+def sun_fit_3P(
+    x: np.ndarray, y: np.ndarray, z: np.ndarray, beamwidth: float = 1, dr: float = 0.25
+) -> Tuple[float, float, float, float]:
     """
     Retrieval using the inversion of a theoretical model of the solar power at
     the top of the atmosphere and of the systematic antenna pointing biases in
@@ -139,7 +141,9 @@ def sun_fit_3P(x, y, z, beamwidth=1, dr=0.25):
     return x0, y0, p0, r_sq
 
 
-def sun_fit_5P(x, y, z, beamwidth=1, dr=0.25):
+def sun_fit_5P(
+    x: np.ndarray, y: np.ndarray, z: np.ndarray, beamwidth: float = 1, dr: float = 0.25
+) -> Tuple[float, float, float, float]:
     """
     Retrieval using the inversion of a theoretical model of the solar power at
     the top of the atmosphere and of the systematic antenna pointing biases in
@@ -189,7 +193,9 @@ def sun_fit_5P(x, y, z, beamwidth=1, dr=0.25):
     return x0, y0, p0, r_sq
 
 
-def solar_statistics(solar_file, beamwidth=1, dr=0.25, fmin_thld=0.3, do_5P=False):
+def solar_statistics(
+    solar_file: str, beamwidth: float = 1, dr: float = 0.25, fmin_thld: float = 0.3, do_5P: bool = False
+) -> pd.DataFrame:
     """
     This function performs the model inversion and statistics for the solar
     positioning and power monitoring. It reads the file produced by the suncal
