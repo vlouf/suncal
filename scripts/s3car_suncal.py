@@ -4,8 +4,9 @@ Quality control of antenna alignment and receiver calibration using the sun
 @creator: Valentin Louf <valentin.louf@bom.gov.au>
 @project: s3car-server
 @institution: Bureau of Meteorology
-@date: 25/08/2020
+@date: 13/02/2021
 
+    check_total_power_presence
     driver
     mkdir
     main
@@ -15,7 +16,6 @@ import os
 import sys
 import glob
 import argparse
-import datetime
 import warnings
 import traceback
 
@@ -43,21 +43,21 @@ def check_total_power_presence(infile: str) -> bool:
     True/False presence of the uncorrected reflectivity.
     """
     with netCDF4.Dataset(infile) as ncid:
-        groups = ncid['/dataset1'].groups.keys()
+        groups = ncid["/dataset1"].groups.keys()
         var = []
         for group in groups:
             if "data" not in group:
                 continue
-            name = ncid[f'/dataset1/{group}/what'].getncattr('quantity')
+            name = ncid[f"/dataset1/{group}/what"].getncattr("quantity")
             var.append(name)
 
-    if 'TH' in var:
+    if "TH" in var:
         return True
     else:
         return False
 
 
-def driver(infile: str):
+def driver(infile: str) -> pd.DataFrame:
     """
     Buffer function to catch and kill errors about missing Sun hit.
 
@@ -156,27 +156,15 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    VOLS_ROOT_PATH = "/srv/data/s3car-server/vols"
+    VOLS_ROOT_PATH: str = "/srv/data/s3car-server/vols"
 
-    parser_description = (
-        "Quality control of antenna alignment and receiver calibration using the sun."
-    )
+    parser_description = "Quality control of antenna alignment and receiver calibration using the sun."
     parser = argparse.ArgumentParser(description=parser_description)
     parser.add_argument(
-        "-r",
-        "--rid",
-        dest="rid",
-        type=int,
-        required=True,
-        help="Radar RAPIC ID number.",
+        "-r", "--rid", dest="rid", type=int, required=True, help="Radar RAPIC ID number.",
     )
     parser.add_argument(
-        "-d",
-        "--date",
-        dest="date",
-        type=str,
-        help="Value to be converted to Timestamp (str).",
-        required=True,
+        "-d", "--date", dest="date", type=str, help="Value to be converted to Timestamp (str).", required=True,
     )
     parser.add_argument(
         "-o",
@@ -199,5 +187,5 @@ if __name__ == "__main__":
         sys.exit()
 
     with warnings.catch_warnings():
-        warnings.simplefilter('ignore')
+        warnings.simplefilter("ignore")
         main()

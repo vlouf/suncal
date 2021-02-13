@@ -4,7 +4,7 @@ National archive.
 
 @creator: Valentin Louf <valentin.louf@bom.gov.au>
 @institution: Monash University and Bureau of Meteorology
-@date: 10/09/2020
+@date: 13/02/2021
 
     buffer
     check_rid
@@ -18,7 +18,6 @@ National archive.
 import gc
 import os
 import sys
-import glob
 import time
 import zipfile
 import argparse
@@ -29,7 +28,6 @@ import traceback
 from typing import List
 
 import crayons
-import numpy as np
 import pandas as pd
 import dask.bag as db
 
@@ -37,7 +35,7 @@ import suncal
 from suncal import SunNotFoundError
 
 
-def buffer(infile: str):
+def buffer(infile: str) -> pd.DataFrame:
     """
     Buffer function to catch and kill errors about missing Sun hit.
 
@@ -206,22 +204,10 @@ if __name__ == "__main__":
         help="Output directory",
     )
     parser.add_argument(
-        "-s",
-        "--start-date",
-        dest="start_date",
-        default=None,
-        type=str,
-        help="Starting date.",
-        required=True,
+        "-s", "--start-date", dest="start_date", default=None, type=str, help="Starting date.", required=True,
     )
     parser.add_argument(
-        "-e",
-        "--end-date",
-        dest="end_date",
-        default=None,
-        type=str,
-        help="Ending date.",
-        required=True,
+        "-e", "--end-date", dest="end_date", default=None, type=str, help="Ending date.", required=True,
     )
 
     args = parser.parse_args()
@@ -229,7 +215,7 @@ if __name__ == "__main__":
     START_DATE = args.start_date
     END_DATE = args.end_date
     OUTPATH = args.output
-    ZIPDIR = "/scratch/kl02/vhl548/unzipdir/"
+    ZIPDIR: str = "/scratch/kl02/vhl548/unzipdir/"
 
     if not check_rid():
         parser.error("Invalid Radar ID.")
