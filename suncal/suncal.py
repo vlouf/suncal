@@ -56,14 +56,12 @@ def correct_refractivity(elevation: float, n0: float = 1.000313, k: float = 5 / 
 
 
 def sunpos_reflectivity(
-    infile,
-    refl_name="total_power",
-    corr_refl_name="reflectivity",
-    zdr_name="differential_reflectivity",
-    zenith_threshold=10,
-    min_gate_altitude=1500,
-    max_gate_altitude=20000,
-):
+    infile: str,
+    refl_name: str = "total_power",
+    corr_refl_name: str = "reflectivity",
+    zdr_name: str = "differential_reflectivity",
+    zenith_threshold: float = 10,
+) -> pd.DataFrame:
     """
     Extract Sun's reflectivity and radar azimuth/elevation angles of the solar
     hit. Will try to extract differential reflectivity too if it exists.
@@ -72,11 +70,8 @@ def sunpos_reflectivity(
     -----------
     infile: str
         Input radar file. Must be compatible with Py-ART.
-    zenith_threshold: int
-        Maximum elevation angle for to look for the Sun.
-    min_gate_altitude: int
-        Minimum altitude in meters for radar gate. Too small maybe contaminated
-        with ground clutter.
+    zenith_threshold: float
+        Maximum elevation angle for to look for the Sun.    
 
     Returns:
     --------
