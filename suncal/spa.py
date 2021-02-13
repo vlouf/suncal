@@ -608,7 +608,7 @@ def observed_sunpos(dt,
     return res
 
 
-def topocentric_sunpos(dt, latitude, longitude, temperature=None, pressure=None, delta_t=0, radians=False):
+def topocentric_sunpos(dt, latitude, longitude, elevation, temperature=None, pressure=None, delta_t=0, radians=False):
     """Compute the topocentric coordinates of the sun as viewed at the given time and location.
     Parameters
     ----------
