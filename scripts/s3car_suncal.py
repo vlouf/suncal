@@ -28,6 +28,26 @@ import suncal
 from suncal import SunNotFoundError
 
 
+def buffer(func):
+    """
+    Decorator to catch and kill error message.
+    """
+
+    def wrapper(*args, **kwargs):
+        try:
+            rslt = func(*args, **kwargs)
+        except OSError:
+            print(f"File invalid: {args}.")
+            return None
+        except Exception:
+            traceback.print_exc()
+            rslt = None
+        return rslt
+
+    return wrapper
+
+
+@buffer
 def check_total_power_presence(infile: str) -> bool:
     """
     Check for the presence of the Uncorrected Reflectivity fields in the ODIM
