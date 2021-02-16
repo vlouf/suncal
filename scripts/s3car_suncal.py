@@ -4,7 +4,7 @@ Quality control of antenna alignment and receiver calibration using the sun
 @creator: Valentin Louf <valentin.louf@bom.gov.au>
 @project: s3car-server
 @institution: Bureau of Meteorology
-@date: 13/02/2021
+@date: 16/02/2021
 
     check_total_power_presence
     driver
@@ -42,6 +42,10 @@ def check_total_power_presence(infile: str) -> bool:
     ========
     True/False presence of the uncorrected reflectivity.
     """
+    if os.stat(infile).st_size == 0:
+        print(f"{infile} is empty!")
+        return False
+
     with netCDF4.Dataset(infile) as ncid:
         groups = ncid["/dataset1"].groups.keys()
         var = []
