@@ -4,9 +4,11 @@ Quality control of antenna alignment and receiver calibration using the sun
 @creator: Valentin Louf <valentin.louf@bom.gov.au>
 @project: s3car-server
 @institution: Bureau of Meteorology
-@date: 16/02/2021
+@date: 22/02/2021
 
-    check_total_power_presence
+    buffer
+    check_file
+    check_reflectivity
     driver
     mkdir
     main
@@ -48,7 +50,27 @@ def buffer(func):
 
 
 @buffer
-def check_total_power_presence(infile: str) -> bool:
+def check_file(infile: str) -> bool:
+    """
+    Check if file is empty.
+
+    Parameter:
+    ==========
+    infile: str
+        Input ODIM H5 file.
+
+    Returns:
+    ========
+        True/False if file is not empty/empty.
+    """
+    if os.stat(infile).st_size == 0:
+        return False
+    else:
+        return True
+
+
+@buffer
+def check_reflectivity(infile: str) -> bool:
     """
     Check for the presence of the Uncorrected Reflectivity fields in the ODIM
     h5 dataset. By convention the field name is TH.
@@ -62,10 +84,6 @@ def check_total_power_presence(infile: str) -> bool:
     ========
     True/False presence of the uncorrected reflectivity.
     """
-    if os.stat(infile).st_size == 0:
-        print(f"{infile} is empty!")
-        return False
-
     with netCDF4.Dataset(infile) as ncid:
         groups = ncid["/dataset1"].groups.keys()
         var = []
@@ -150,12 +168,12 @@ def main() -> None:
 
     input_dir = os.path.join(input_dir, "*.h5")
     flist = sorted(glob.glob(input_dir))
+    flist = [f for f in flist if check_file(f)]
     if len(flist) == 0:
-        print(f"No file found for radar {RID} at {DATE}.")
+        print(f"No file (or all files empty) found for radar {RID} at {DATE}.")
         return None
 
-    # Check for the presence of the Uncorrected reflectivity and filter out files without it.
-    goodfiles = [*map(check_total_power_presence, flist)]
+    goodfiles = [*map(check_reflectivity, flist)]
     if not any(goodfiles):
         print(f"The uncorrected reflectivity field is not present for radar {RID}.")
         return None
