@@ -4,7 +4,7 @@ Model inversions of the daily solar interferences detected.
 @title: sunstats
 @creator: Valentin Louf
 @creator_email: valentin.louf@bom.gov.au
-@date: 13/02/2021
+@date: 11/03/2021
 
 .. autosummary::
     :toctree: generated/
@@ -194,7 +194,12 @@ def sun_fit_5P(
 
 
 def solar_statistics(
-    solar_file: str, beamwidth: float = 1, dr: float = 0.25, fmin_thld: float = 0.3, do_5P: bool = False
+    solar_file: str,
+    beamwidth: float = 1,
+    dr: float = 0.25,
+    fmin_thld: float = 0.3,
+    do_5P: bool = False,
+    band: str = "C",
 ) -> pd.DataFrame:
     """
     This function performs the model inversion and statistics for the solar
@@ -215,6 +220,8 @@ def solar_statistics(
     do_5P: bool
         Doing the 5-parameters model inversion (the 3P technique is done by
         default).
+    band: str
+        "S" or "C" radar frequency band (for atmospheric attenuation).
 
     Returns:
     ========
@@ -241,8 +248,12 @@ def solar_statistics(
         traceback.print_exc()
         return None
 
-    df = df[df.fmin > fmin_thld]
-    df["sun_power"] = df.reflectivity - 20 * np.log10(df.range) - 10 * np.log10(0.5) - 2 * 0.017 * df.range / 1e3
+    if band == "C":
+        atten_atm = 0.019
+    else:
+        atten_atm = 0.016
+    df = df.loc[df.fmin > fmin_thld]
+    df["sun_power"] = df.reflectivity - 20 * np.log10(df.range) - 10 * np.log10(0.5) - 2 * atten_atm * df.range / 1e3
 
     # Remove outliers
     mad_val = mad_filter(df["sun_power"])
