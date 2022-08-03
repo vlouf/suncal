@@ -5,7 +5,7 @@ Radar calibration code using the Sun as reference for position and power.
 @creator: Valentin Louf
 @creator_email: valentin.louf@bom.gov.au
 @creation: 21/02/2020
-@date: 09/10/2020
+@date: 03/08/2022
 
 .. autosummary::
     :toctree: generated/
@@ -16,10 +16,8 @@ Radar calibration code using the Sun as reference for position and power.
 """
 import datetime
 import warnings
-import traceback
 
-import pyart
-import cftime
+import pyodim
 import netCDF4
 import numpy as np
 import pandas as pd
@@ -43,7 +41,7 @@ def correct_refractivity(elevation: float, n0: float = 1.000313, k: float = 5 / 
     n0: float
         Reflective index of air.
     k: float
-        4/3 earth’s radius model.
+        4/3 earth's radius model.
 
     Returns:
     ========
@@ -57,9 +55,9 @@ def correct_refractivity(elevation: float, n0: float = 1.000313, k: float = 5 / 
 
 def sunpos_reflectivity(
     infile: str,
-    refl_name: str = "total_power",
-    corr_refl_name: str = "reflectivity",
-    zdr_name: str = "differential_reflectivity",
+    refl_name: str = "TH",
+    corr_refl_name: str = "DBZH",
+    zdr_name: str = "ZDR",
     zenith_threshold: float = 10,
 ) -> pd.DataFrame:
     """
@@ -71,7 +69,7 @@ def sunpos_reflectivity(
     infile: str
         Input radar file. Must be compatible with Py-ART.
     zenith_threshold: float
-        Maximum elevation angle for to look for the Sun.    
+        Maximum elevation angle for to look for the Sun.
 
     Returns:
     --------
@@ -105,79 +103,100 @@ def sunpos_reflectivity(
         raise SunNotFoundError("Sun not within scope.")
 
     # Potential hit from the Sun. Read the whole volume now.
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        try:
-            radar = pyart.aux_io.read_odim_h5(infile)
-        except Exception:
-            traceback.print_exc()
-            return None
+    nradar = pyodim.read_odim(infile, lazy_load=True)
+    radar = nradar[0].compute()
 
-    dtime = cftime.num2pydate(radar.time["data"], radar.time["units"])
-    lat = radar.latitude["data"]
-    lon = radar.longitude["data"]
-    if height == 0:
-        try:
-            height = radar.altitude_agl["data"]
-        except TypeError:
-            height = 0
+    dtime = [pd.Timestamp(t).to_pydatetime() for t in radar.time.values]
+    lat = radar.attrs["latitude"]
+    lon = radar.attrs["longitude"]
+    height = radar.attrs["height"]
 
     sun_azimuth, zenith, _, _, _ = sunpos(dtime, lat, lon, height).T
     zenith = 90 - zenith  # Change coordinates from zenith angle to elevation angle
     if all(zenith > zenith_threshold) or all(zenith < 0):
         raise SunNotFoundError("Sun not within scope.")
 
+    output_keys = [
+        "time",
+        "range",
+        "sun_azimuth",
+        "sun_elevation",
+        "radar_elevation",
+        "radar_azimuth",
+        "fmin",
+        "reflectivity"
+    ]
+    if is_zdr:
+        output_keys.append("differential_reflectivity")
+
+    data_dict = dict()
+    for k in output_keys:
+        data_dict[k] = np.array([])
+    data_dict['time'] = []  # Not a numpy array
+
+    nradar = [r.compute() for r in nradar]
+
     # Correct ground-radar elevation from the refraction:
     # Truth = Apparant - refraction angle cf. Holleman (2013)
-    elevation = radar.elevation["data"] - correct_refractivity(radar.elevation["data"])
+    count = 0
+    for radar in nradar:
+        elevation = radar.elevation.values[0]
+        elevation = elevation - correct_refractivity(elevation)
+        if elevation <= 0.9:
+            continue
+        if all(np.abs(elevation - zenith) > 5):
+            continue
 
-    reflectivity = radar.fields[refl_name]["data"].filled(np.NaN)
-    zh = radar.fields[corr_refl_name]["data"].filled(np.NaN)
-    try:
-        zdr = radar.fields[zdr_name]["data"]
-        is_zdr = True
-    except KeyError:
-        is_zdr = False
+        reflectivity = radar[refl_name].values
+        zh = radar[corr_refl_name].values
+        try:
+            zdr = radar[zdr_name].values
+            is_zdr = True
+        except KeyError:
+            is_zdr = False
 
-    # Ray filling ratio, i.e. number of non-NA gate in ray
-    fmin = 1 - np.sum(np.isnan(reflectivity), axis=1) / reflectivity.shape[1]
+        # Ray filling ratio, i.e. number of non-NA gate in ray
+        fmin = 1 - np.sum(np.isnan(reflectivity), axis=1) / reflectivity.shape[1]
 
-    # Radar coordinates.
-    r = radar.range["data"]
-    radar_azimuth_total = radar.azimuth["data"] % 360  # Corr. for neg azi in case of wrapping.
-    R, azi2d = np.meshgrid(r, radar_azimuth_total)
-    _, time2d = np.meshgrid(r, dtime)
-    _, elev2d = np.meshgrid(r, elevation)
-    _, zenith2d = np.meshgrid(r, zenith)
-    _, sunazi2d = np.meshgrid(r, sun_azimuth)
-    _, fmin2d = np.meshgrid(r, fmin)
+        # Radar coordinates.
+        r = radar.range.values
+        azi = radar.azimuth.values % 360  # Corr. for neg azi in case of wrapping.
+        dtime = radar.time.values
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        pos = (
-            (np.abs(azi2d - sunazi2d) < 5)
-            & (np.abs(elev2d - zenith2d) < 5)
-            & (R > 50e3)
-            & (elev2d > 0.9)
-            & (~np.isnan(reflectivity))
-            & (reflectivity < 15)
-            & (np.isnan(zh) | (zh < 10))
-        )
+        R, azi2d = np.meshgrid(r, azi)
+        _, time2d = np.meshgrid(r, dtime)
+        _, sunazi2d = np.meshgrid(r, sun_azimuth)
+        _, zenith2d = np.meshgrid(r, zenith)
+        _, fmin2d = np.meshgrid(r, fmin)
 
-    if np.sum(pos) == 0:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            pos = (
+                (np.abs(azi2d - sunazi2d) < 5)
+                & (R > 50e3)
+                & (~np.isnan(reflectivity))
+                & (reflectivity < 15)
+                & (np.isnan(zh) | (zh < 10))
+            )
+
+        if np.sum(pos) == 0:
+            continue
+
+        count += np.sum(pos)
+        elev2d = np.array([elevation] * np.sum(pos))
+
+        [data_dict['time'].append(t) for t in time2d[pos]]
+        data_dict['range'] = np.append(data_dict['range'], R[pos])
+        data_dict['sun_azimuth'] = np.append(data_dict['sun_azimuth'], sunazi2d[pos])
+        data_dict['sun_elevation'] = np.append(data_dict['sun_elevation'], zenith2d[pos])
+        data_dict['radar_elevation'] = np.append(data_dict['radar_elevation'], elev2d)
+        data_dict['radar_azimuth'] = np.append(data_dict['radar_azimuth'], azi2d[pos])
+        data_dict['fmin'] = np.append(data_dict['fmin'], fmin2d[pos])
+        data_dict['reflectivity'] = np.append(data_dict['reflectivity'], reflectivity[pos])
+        if is_zdr:
+            data_dict['differential_reflectivity'] = np.append(data_dict['differential_reflectivity'], zdr[pos])
+
+    if count == 0:
         raise SunNotFoundError("No solar hit found.")
-
-    data_dict = {
-        "time": time2d[pos],
-        "range": R[pos],
-        "sun_azimuth": sunazi2d[pos],
-        "sun_elevation": zenith2d[pos],
-        "radar_elevation": elev2d[pos],
-        "radar_azimuth": azi2d[pos],
-        "fmin": fmin2d[pos],
-        "reflectivity": reflectivity[pos],
-    }
-    if is_zdr:
-        data_dict.update({"differential_reflectivity": zdr[pos]})
 
     return pd.DataFrame(data_dict)

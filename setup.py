@@ -38,7 +38,7 @@ setup(
     ],
     keywords='radar weather meteorology calibration',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
-    install_requires=['numpy', 'arm_pyart', 'pandas', 'netCDF4', 'h5py', 'scipy', 'scikit-learn'],
+    install_requires=['numpy', 'pyodim', 'pandas', 'netCDF4', 'h5py', 'scipy', 'scikit-learn'],
     project_urls={
         'Bug Reports': 'https://github.com/vlouf/suncal/issues',
         'Source': 'https://github.com/vlouf/suncal/',
