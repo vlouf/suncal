@@ -53,6 +53,44 @@ def correct_refractivity(elevation: float, n0: float = 1.000313, k: float = 5 / 
     return np.rad2deg(refra)
 
 
+def check_sun_in_scope(infile, zenith_threshold):
+    """
+    To save computing time, we check the first timestep only to determine
+    if it's worth to look into the dataset or we can skip it.
+
+    Parameters:
+    -----------
+    infile: str
+        Input radar file. Must be compatible with Py-ART.
+    zenith_threshold: float
+        Maximum elevation angle for to look for the Sun.
+
+    Returns:
+    ========
+    True/False: bool
+
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        with netCDF4.Dataset(infile) as ncid:
+            lon = ncid["where"].lon
+            lat = ncid["where"].lat
+            try:
+                height = ncid["where"].height
+            except Exception:
+                height = 0
+
+            strtime = ncid["dataset1"]["what"].startdate + ncid["dataset1"]["what"].starttime
+            dtime = datetime.datetime.strptime(strtime, "%Y%m%d%H%M%S")
+
+    # Compute Sun's position for given lat/lon and time.
+    sun_azimuth, zenith, _, _, _ = sunpos(dtime, lat, lon, height).T
+    if (90 - zenith) > (zenith_threshold + 2) or (90 - zenith) < -2:
+        return False
+    else:
+        return True
+
+
 def sunpos_reflectivity(
     infile: str,
     refl_name: str = "TH",
@@ -82,27 +120,21 @@ def sunpos_reflectivity(
     if zenith_threshold > 90:
         raise ValueError("Living in Uranus?")
 
-    # To save computing time, we check the first timestep only to determine
-    # if it's worth to look into the dataset or we can skip it.
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        with netCDF4.Dataset(infile) as ncid:
-            lon = ncid["where"].lon
-            lat = ncid["where"].lat
-            try:
-                height = ncid["where"].height
-            except Exception:
-                height = 0
+    output_keys = [
+        "time",
+        "range",
+        "sun_azimuth",
+        "sun_elevation",
+        "radar_elevation",
+        "radar_azimuth",
+        "fmin",
+        "reflectivity"
+    ]
 
-            strtime = ncid["dataset1"]["what"].startdate + ncid["dataset1"]["what"].starttime
-            dtime = datetime.datetime.strptime(strtime, "%Y%m%d%H%M%S")
-
-    # Compute Sun's position for given lat/lon and time.
-    sun_azimuth, zenith, _, _, _ = sunpos(dtime, lat, lon, height).T
-    if (90 - zenith) > (zenith_threshold + 2) or (90 - zenith) < -2:
+    if not check_sun_in_scope(infile, zenith_threshold):
         raise SunNotFoundError("Sun not within scope.")
 
-    # Potential hit from the Sun. Read the whole volume now.
+    # Potential hit from the Sun. Read more.
     nradar = pyodim.read_odim(infile, lazy_load=True)
     radar = nradar[0].compute()
 
@@ -116,16 +148,12 @@ def sunpos_reflectivity(
     if all(zenith > zenith_threshold) or all(zenith < 0):
         raise SunNotFoundError("Sun not within scope.")
 
-    output_keys = [
-        "time",
-        "range",
-        "sun_azimuth",
-        "sun_elevation",
-        "radar_elevation",
-        "radar_azimuth",
-        "fmin",
-        "reflectivity"
-    ]
+    try:
+        zdr = radar[zdr_name].values
+        is_zdr = True
+    except KeyError:
+        is_zdr = False
+
     if is_zdr:
         output_keys.append("differential_reflectivity")
 
@@ -149,11 +177,8 @@ def sunpos_reflectivity(
 
         reflectivity = radar[refl_name].values
         zh = radar[corr_refl_name].values
-        try:
+        if is_zdr:
             zdr = radar[zdr_name].values
-            is_zdr = True
-        except KeyError:
-            is_zdr = False
 
         # Ray filling ratio, i.e. number of non-NA gate in ray
         fmin = 1 - np.sum(np.isnan(reflectivity), axis=1) / reflectivity.shape[1]
