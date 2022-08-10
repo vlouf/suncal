@@ -165,7 +165,7 @@ def sunpos_reflectivity(
         if elevation < 0.9:
             continue
             
-        dtime = [pd.Timestamp(t).to_pydatetime() for t in radar.time.values]
+        dtime = pd.to_datetime(radar.time).to_pydatetime().tolist()  # Convert to list of datetime
         sun_azimuth, zenith, _, _, _ = sunpos(dtime, lat, lon, height).T
         zenith = 90 - zenith  # Change coordinates from zenith angle to elevation angle
         if all(zenith > zenith_threshold) or all(zenith < 0):
