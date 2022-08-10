@@ -138,24 +138,16 @@ def sunpos_reflectivity(
     nradar = pyodim.read_odim(infile, lazy_load=True)
     radar = nradar[0].compute()
 
-    dtime = [pd.Timestamp(t).to_pydatetime() for t in radar.time.values]
     lat = radar.attrs["latitude"]
     lon = radar.attrs["longitude"]
-    height = radar.attrs["height"]
-
-    sun_azimuth, zenith, _, _, _ = sunpos(dtime, lat, lon, height).T
-    zenith = 90 - zenith  # Change coordinates from zenith angle to elevation angle
-    if all(zenith > zenith_threshold) or all(zenith < 0):
-        raise SunNotFoundError("Sun not within scope.")
+    height = radar.attrs["height"]    
 
     try:
         zdr = radar[zdr_name].values
+        output_keys.append("differential_reflectivity")
         is_zdr = True
     except KeyError:
         is_zdr = False
-
-    if is_zdr:
-        output_keys.append("differential_reflectivity")
 
     data_dict = dict()
     for k in output_keys:
@@ -170,8 +162,15 @@ def sunpos_reflectivity(
     for radar in nradar:
         elevation = radar.elevation.values[0]
         elevation = elevation - correct_refractivity(elevation)
-        if elevation <= 0.9:
+        if elevation < 0.9:
             continue
+            
+        dtime = [pd.Timestamp(t).to_pydatetime() for t in radar.time.values]
+        sun_azimuth, zenith, _, _, _ = sunpos(dtime, lat, lon, height).T
+        zenith = 90 - zenith  # Change coordinates from zenith angle to elevation angle
+        if all(zenith > zenith_threshold) or all(zenith < 0):
+            continue 
+            
         if all(np.abs(elevation - zenith) > 5):
             continue
 

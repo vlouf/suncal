@@ -48,9 +48,11 @@ def buffer(infile: str) -> pd.DataFrame:
     ========
     rslt: pd.DataFrame
         Pandas dataframe with the results from the solar calibration code.
-    """
+    total_power_horizontal
+    reflectivity_horizontal
+    """ 
     try:
-        rslt = suncal.sunpos_reflectivity(infile)
+        rslt = suncal.sunpos_reflectivity(infile, refl_name="TH", corr_refl_name="DBZH")
     except SunNotFoundError:
         return None
     except Exception:
@@ -65,7 +67,7 @@ def check_rid() -> bool:
     """
     Check if the Radar ID provided exists.
     """
-    indir = f"/g/data/rq0/level_1/odim_pvol/{RID:02}"
+    indir = f"/g/data/rq0/level_1/odim_pvol/{RID}"
     return os.path.exists(indir)
 
 
@@ -107,7 +109,7 @@ def get_radar_archive_file(date) -> str:
         Radar archive if it exists at the given date.
     """
     datestr = date.strftime("%Y%m%d")
-    file = f"/g/data/rq0/level_1/odim_pvol/{RID:02}/{date.year}/vol/{RID:02}_{datestr}.pvol.zip"
+    file = f"/g/data/rq0/level_1/odim_pvol/{RID}/{date.year}/vol/{RID}_{datestr}.pvol.zip"
 
     if not os.path.exists(file):
         return None
