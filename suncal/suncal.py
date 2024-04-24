@@ -14,11 +14,11 @@ Radar calibration code using the Sun as reference for position and power.
     correct_refractivity
     sunpos_reflectivity
 """
-import datetime
+import itertools
 import warnings
 
+import h5py
 import pyodim
-import netCDF4
 import numpy as np
 import pandas as pd
 
@@ -53,15 +53,15 @@ def correct_refractivity(elevation: float, n0: float = 1.000313, k: float = 5 / 
     return np.rad2deg(refra)
 
 
-def check_sun_in_scope(infile, zenith_threshold):
+def check_sun_in_scope(odimfile, zenith_threshold):
     """
     To save computing time, we check the first timestep only to determine
     if it's worth to look into the dataset or we can skip it.
 
     Parameters:
     -----------
-    infile: str
-        Input radar file. Must be compatible with Py-ART.
+    odimfile: str
+        Input ODIM radar file
     zenith_threshold: float
         Maximum elevation angle for to look for the Sun.
 
@@ -69,19 +69,32 @@ def check_sun_in_scope(infile, zenith_threshold):
     ========
     True/False: bool
 
-    """
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        with netCDF4.Dataset(infile) as ncid:
-            lon = ncid["where"].lon
-            lat = ncid["where"].lat
-            try:
-                height = ncid["where"].height
-            except Exception:
-                height = 0
+    """    
+    dates = []
+    with h5py.File(odimfile) as odim:
+        # Extract volume metadata date and time      
+        vol_date = odim["what"].attrs["date"].decode()
+        vol_time = odim["what"].attrs["time"].decode()
 
-            strtime = ncid["dataset1"]["what"].startdate + ncid["dataset1"]["what"].starttime
-            dtime = datetime.datetime.strptime(strtime, "%Y%m%d%H%M%S")
+        lon = odim["where"].attrs["lon"]
+        lat = odim["where"].attrs["lat"]
+        height = odim["where"].attrs["height"]
+
+        for dt_idx in itertools.count(1):
+            if not f"dataset{dt_idx}" in odim:
+                break
+
+            # Extract end date and time of each dataset
+            dtmp = odim[f"dataset{dt_idx}/what"].attrs["enddate"].decode()
+            ttmp = odim[f"dataset{dt_idx}/what"].attrs["endtime"].decode()
+            dates.append(pd.Timestamp(dtmp + ttmp))
+
+    if len(dates) == 0:
+        # Time that "should be"
+        dtime = pd.Timestamp(vol_date + vol_time)
+    else:
+        # Half time of the actual acquisition of obs.
+        dtime = dates[len(dates) // 2]
 
     # Compute Sun's position for given lat/lon and time.
     sun_azimuth, zenith, _, _, _ = sunpos(dtime, lat, lon, height).T
