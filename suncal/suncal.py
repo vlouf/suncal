@@ -5,7 +5,7 @@ Radar calibration code using the Sun as reference for position and power.
 @creator: Valentin Louf
 @creator_email: valentin.louf@bom.gov.au
 @creation: 21/02/2020
-@date: 03/08/2022
+@date: 24/04/2024
 
 .. autosummary::
     :toctree: generated/
@@ -53,7 +53,7 @@ def correct_refractivity(elevation: float, n0: float = 1.000313, k: float = 5 / 
     return np.rad2deg(refra)
 
 
-def check_sun_in_scope(odimfile, zenith_threshold):
+def check_sun_in_scope(odimfile: str, zenith_threshold: float) -> bool:
     """
     To save computing time, we check the first timestep only to determine
     if it's worth to look into the dataset or we can skip it.
