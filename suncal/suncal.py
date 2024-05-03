@@ -175,7 +175,7 @@ def sunpos_reflectivity(
     for radar in nradar:
         elevation = radar.elevation.values[0]
         elevation = elevation - correct_refractivity(elevation)
-        if elevation < 0.9:
+        if elevation < 1:
             continue
             
         dtime = pd.to_datetime(radar.time).to_pydatetime().tolist()  # Convert to list of datetime
