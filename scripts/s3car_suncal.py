@@ -14,15 +14,16 @@ Quality control of antenna alignment and receiver calibration using the sun
     main
 """
 # Python Standard Library
+import argparse
+import glob
+import itertools
 import os
 import sys
-import glob
-import argparse
-import warnings
 import traceback
+import warnings
 
 # Other libraries.
-import netCDF4
+import h5py
 import pandas as pd
 import dask.bag as db
 
@@ -84,19 +85,14 @@ def check_reflectivity(infile: str) -> bool:
     ========
     True/False presence of the uncorrected reflectivity.
     """
-    with netCDF4.Dataset(infile) as ncid:
-        groups = ncid["/dataset1"].groups.keys()
-        var = []
-        for group in groups:
-            if "data" not in group:
-                continue
-            name = ncid[f"/dataset1/{group}/what"].getncattr("quantity")
-            var.append(name)
-
-    if "TH" in var:
-        return True
-    else:
-        return False
+    with h5py.File(infile) as odim:
+        for dt_idx in itertools.count(1):
+            if not f"dataset1/data{dt_idx}" in odim:
+                break # exhausted, not found
+            name = odim[f"dataset1/data{dt_idx}/what"].attrs["quantity"].decode()
+            if name is "TH":
+                return True # found
+    return False
 
 
 def driver(infile: str) -> pd.DataFrame:
