@@ -4,7 +4,7 @@ Solar calibration of radar data. The radio noise that comes from the Sun has bee
 
 ## Dependencies
 
-- [netCDF4](https://github.com/Unidata/netcdf4-python)
+- [h5py](https://www.h5py.org)
 - [numpy](https://www.numpy.org/)
 - [pandas](https://pandas.pydata.org/)
 - [Py-ART](https://github.com/ARM-DOE/pyart)
