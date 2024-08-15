@@ -1,3 +1,5 @@
+[![Python package](https://github.com/vlouf/suncal/actions/workflows/python-package.yml/badge.svg)](https://github.com/vlouf/suncal/actions/workflows/python-package.yml)
+
 # ☀️ Suncal
 
 **Suncal** is a software package for solar calibration of radar data respecting the ODIM H5 convention. 
