@@ -1,4 +1,4 @@
-name: Publish Pyodim to PyPI / GitHub
+name: Publish suncal to PyPI / GitHub
 
 on:
   push:
