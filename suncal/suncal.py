@@ -5,7 +5,7 @@ Radar calibration code using the Sun as reference for position and power.
 @creator: Valentin Louf
 @creator_email: valentin.louf@bom.gov.au
 @creation: 21/02/2020
-@date: 09/10/2020
+@date: 24/04/2024
 
 .. autosummary::
     :toctree: generated/
@@ -14,13 +14,12 @@ Radar calibration code using the Sun as reference for position and power.
     correct_refractivity
     sunpos_reflectivity
 """
-import datetime
+import itertools
+from typing import Tuple
 import warnings
-import traceback
 
-import pyart
-import cftime
-import netCDF4
+import h5py
+import pyodim
 import numpy as np
 import pandas as pd
 
@@ -43,7 +42,7 @@ def correct_refractivity(elevation: float, n0: float = 1.000313, k: float = 5 / 
     n0: float
         Reflective index of air.
     k: float
-        4/3 earth’s radius model.
+        4/3 earth's radius model.
 
     Returns:
     ========
@@ -55,11 +54,84 @@ def correct_refractivity(elevation: float, n0: float = 1.000313, k: float = 5 / 
     return np.rad2deg(refra)
 
 
+def check_sun_in_scope(odimfile: str, zenith_threshold: float) -> bool:
+    """
+    To save computing time, we check the first timestep only to determine
+    if it's worth to look into the dataset or we can skip it.
+
+    Parameters:
+    -----------
+    odimfile: str
+        Input ODIM radar file
+    zenith_threshold: float
+        Maximum elevation angle for to look for the Sun.
+
+    Returns:
+    ========
+    True/False: bool
+
+    """    
+    dates = []
+    with h5py.File(odimfile) as odim:
+        # Extract volume metadata date and time      
+        vol_date = odim["what"].attrs["date"].decode()
+        vol_time = odim["what"].attrs["time"].decode()
+
+        lon = odim["where"].attrs["lon"]
+        lat = odim["where"].attrs["lat"]
+        height = odim["where"].attrs["height"]
+
+        for dt_idx in itertools.count(1):
+            if not f"dataset{dt_idx}" in odim:
+                break
+
+            # Extract end date and time of each dataset
+            dtmp = odim[f"dataset{dt_idx}/what"].attrs["enddate"].decode()
+            ttmp = odim[f"dataset{dt_idx}/what"].attrs["endtime"].decode()
+            dates.append(pd.Timestamp(dtmp + ttmp))
+
+    if len(dates) == 0:
+        # Time that "should be"
+        dtime = pd.Timestamp(vol_date + vol_time)
+    else:
+        # Half time of the actual acquisition of obs.
+        dtime = dates[len(dates) // 2]
+
+    # Compute Sun's position for given lat/lon and time.
+    sun_azimuth, zenith, _, _, _ = sunpos(dtime, lat, lon, height).T
+    if (90 - zenith) > (zenith_threshold + 2) or (90 - zenith) < -2:
+        return False
+    else:
+        return True
+    
+
+def get_sunpos_for_location(date: pd.Timestamp, lon: float, lat: float, height: float = 0.) -> Tuple[float, float]:
+    """
+    Get the solar azimuth and elevation angle for a given datetime (UTC) and 
+    location (longitude, latitude, and altitude asl).
+    
+    Parameters:
+    ===========
+    date: pd.Timestamp
+    lon: float
+    lat: float
+    height: float
+
+    Returns:
+    ========
+    sun_azi: float
+    zenith: float
+    """
+    sun_azimuth, obs_el, _, _, _ = sunpos(date, lat, lon, height).T
+    zenith = 90 - obs_el
+    return sun_azimuth, zenith
+
+
 def sunpos_reflectivity(
     infile: str,
-    refl_name: str = "total_power",
-    corr_refl_name: str = "reflectivity",
-    zdr_name: str = "differential_reflectivity",
+    refl_name: str = "TH",
+    corr_refl_name: str = "DBZH",
+    zdr_name: str = "ZDR",
     zenith_threshold: float = 10,
 ) -> pd.DataFrame:
     """
@@ -71,7 +143,7 @@ def sunpos_reflectivity(
     infile: str
         Input radar file. Must be compatible with Py-ART.
     zenith_threshold: float
-        Maximum elevation angle for to look for the Sun.    
+        Maximum elevation angle for to look for the Sun.
 
     Returns:
     --------
@@ -84,100 +156,107 @@ def sunpos_reflectivity(
     if zenith_threshold > 90:
         raise ValueError("Living in Uranus?")
 
-    # To save computing time, we check the first timestep only to determine
-    # if it's worth to look into the dataset or we can skip it.
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        with netCDF4.Dataset(infile) as ncid:
-            lon = ncid["where"].lon
-            lat = ncid["where"].lat
-            try:
-                height = ncid["where"].height
-            except Exception:
-                height = 0
+    output_keys = [
+        "time",
+        "range",
+        "sun_azimuth",
+        "sun_elevation",
+        "radar_elevation",
+        "radar_azimuth",
+        "fmin",
+        "reflectivity"
+    ]
 
-            strtime = ncid["dataset1"]["what"].startdate + ncid["dataset1"]["what"].starttime
-            dtime = datetime.datetime.strptime(strtime, "%Y%m%d%H%M%S")
-
-    # Compute Sun's position for given lat/lon and time.
-    sun_azimuth, zenith, _, _, _ = sunpos(dtime, lat, lon, height).T
-    if (90 - zenith) > (zenith_threshold + 2) or (90 - zenith) < -2:
+    if not check_sun_in_scope(infile, zenith_threshold):
         raise SunNotFoundError("Sun not within scope.")
 
-    # Potential hit from the Sun. Read the whole volume now.
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        try:
-            radar = pyart.aux_io.read_odim_h5(infile)
-        except Exception:
-            traceback.print_exc()
-            return None
+    # Potential hit from the Sun. Read more.
+    nradar = pyodim.read_odim(infile, lazy_load=True)
+    radar = nradar[0].compute()
 
-    dtime = cftime.num2pydate(radar.time["data"], radar.time["units"])
-    lat = radar.latitude["data"]
-    lon = radar.longitude["data"]
-    if height == 0:
-        try:
-            height = radar.altitude_agl["data"]
-        except TypeError:
-            height = 0
+    lat = radar.attrs["latitude"]
+    lon = radar.attrs["longitude"]
+    height = radar.attrs["height"]    
 
-    sun_azimuth, zenith, _, _, _ = sunpos(dtime, lat, lon, height).T
-    zenith = 90 - zenith  # Change coordinates from zenith angle to elevation angle
-    if all(zenith > zenith_threshold) or all(zenith < 0):
-        raise SunNotFoundError("Sun not within scope.")
-
-    # Correct ground-radar elevation from the refraction:
-    # Truth = Apparant - refraction angle cf. Holleman (2013)
-    elevation = radar.elevation["data"] - correct_refractivity(radar.elevation["data"])
-
-    reflectivity = radar.fields[refl_name]["data"].filled(np.NaN)
-    zh = radar.fields[corr_refl_name]["data"].filled(np.NaN)
     try:
-        zdr = radar.fields[zdr_name]["data"]
+        zdr = radar[zdr_name].values
+        output_keys.append("differential_reflectivity")
         is_zdr = True
     except KeyError:
         is_zdr = False
 
-    # Ray filling ratio, i.e. number of non-NA gate in ray
-    fmin = 1 - np.sum(np.isnan(reflectivity), axis=1) / reflectivity.shape[1]
+    data_dict = dict()
+    for k in output_keys:
+        data_dict[k] = np.array([])
+    data_dict['time'] = []  # Not a numpy array
 
-    # Radar coordinates.
-    r = radar.range["data"]
-    radar_azimuth_total = radar.azimuth["data"] % 360  # Corr. for neg azi in case of wrapping.
-    R, azi2d = np.meshgrid(r, radar_azimuth_total)
-    _, time2d = np.meshgrid(r, dtime)
-    _, elev2d = np.meshgrid(r, elevation)
-    _, zenith2d = np.meshgrid(r, zenith)
-    _, sunazi2d = np.meshgrid(r, sun_azimuth)
-    _, fmin2d = np.meshgrid(r, fmin)
+    nradar = [r.compute() for r in nradar]
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        pos = (
-            (np.abs(azi2d - sunazi2d) < 5)
-            & (np.abs(elev2d - zenith2d) < 5)
-            & (R > 50e3)
-            & (elev2d > 0.9)
-            & (~np.isnan(reflectivity))
-            & (reflectivity < 15)
-            & (np.isnan(zh) | (zh < 10))
-        )
+    # Correct ground-radar elevation from the refraction:
+    # Truth = Apparant - refraction angle cf. Holleman (2013)
+    count = 0
+    for radar in nradar:
+        elevation = radar.elevation.values[0]
+        elevation = elevation - correct_refractivity(elevation)
+        if elevation < 1:
+            continue
+            
+        dtime = pd.to_datetime(radar.time).to_pydatetime().tolist()  # Convert to list of datetime
+        sun_azimuth, zenith, _, _, _ = sunpos(dtime, lat, lon, height).T
+        zenith = 90 - zenith  # Change coordinates from zenith angle to elevation angle
+        if all(zenith > zenith_threshold) or all(zenith < 0):
+            continue 
+            
+        if all(np.abs(elevation - zenith) > 5):
+            continue
 
-    if np.sum(pos) == 0:
+        reflectivity = radar[refl_name].values
+        zh = radar[corr_refl_name].values
+        if is_zdr:
+            zdr = radar[zdr_name].values
+
+        # Ray filling ratio, i.e. number of non-NA gate in ray
+        fmin = 1 - np.sum(np.isnan(reflectivity), axis=1) / reflectivity.shape[1]
+
+        # Radar coordinates.
+        r = radar.range.values
+        azi = radar.azimuth.values % 360  # Corr. for neg azi in case of wrapping.
+        dtime = radar.time.values
+
+        R, azi2d = np.meshgrid(r, azi)
+        _, time2d = np.meshgrid(r, dtime)
+        _, sunazi2d = np.meshgrid(r, sun_azimuth)
+        _, zenith2d = np.meshgrid(r, zenith)
+        _, fmin2d = np.meshgrid(r, fmin)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            pos = (
+                (np.abs(azi2d - sunazi2d) < 5)
+                & (R > 50e3)
+                & (~np.isnan(reflectivity))
+                & (reflectivity < 15)
+                & (np.isnan(zh) | (zh < 10))
+            )
+
+        if np.sum(pos) == 0:
+            continue
+
+        count += np.sum(pos)
+        elev2d = np.array([elevation] * np.sum(pos))
+
+        [data_dict['time'].append(t) for t in time2d[pos]]
+        data_dict['range'] = np.append(data_dict['range'], R[pos])
+        data_dict['sun_azimuth'] = np.append(data_dict['sun_azimuth'], sunazi2d[pos])
+        data_dict['sun_elevation'] = np.append(data_dict['sun_elevation'], zenith2d[pos])
+        data_dict['radar_elevation'] = np.append(data_dict['radar_elevation'], elev2d)
+        data_dict['radar_azimuth'] = np.append(data_dict['radar_azimuth'], azi2d[pos])
+        data_dict['fmin'] = np.append(data_dict['fmin'], fmin2d[pos])
+        data_dict['reflectivity'] = np.append(data_dict['reflectivity'], reflectivity[pos])
+        if is_zdr:
+            data_dict['differential_reflectivity'] = np.append(data_dict['differential_reflectivity'], zdr[pos])
+
+    if count == 0:
         raise SunNotFoundError("No solar hit found.")
-
-    data_dict = {
-        "time": time2d[pos],
-        "range": R[pos],
-        "sun_azimuth": sunazi2d[pos],
-        "sun_elevation": zenith2d[pos],
-        "radar_elevation": elev2d[pos],
-        "radar_azimuth": azi2d[pos],
-        "fmin": fmin2d[pos],
-        "reflectivity": reflectivity[pos],
-    }
-    if is_zdr:
-        data_dict.update({"differential_reflectivity": zdr[pos]})
 
     return pd.DataFrame(data_dict)

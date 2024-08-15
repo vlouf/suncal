@@ -4,12 +4,13 @@ Model inversions of the daily solar interferences detected.
 @title: sunstats
 @creator: Valentin Louf
 @creator_email: valentin.louf@bom.gov.au
-@date: 11/03/2021
+@date: 15/02/2023
 
 .. autosummary::
     :toctree: generated/
 
     mad_filter
+    read_csv_files
     solar_widths_scan
     sun_fit_3P
     sun_fit_5P
@@ -44,8 +45,46 @@ def mad_filter(x: np.ndarray, σ: float = 1.48) -> np.ndarray:
     xmed = np.median(x)
     umad = np.abs(x - xmed)
     mad = np.median(umad)
-    umad[umad >= σ * mad] = np.NaN
+    umad[umad >= σ * mad] = np.nan
     return umad
+
+
+def read_csv_files(solar_file: str) -> pd.DataFrame:
+    if solar_file.endswith(".gz"):
+        df = pd.read_csv(
+            solar_file,
+            compression='gzip',
+            parse_dates=["time"],
+            index_col=["time"],
+            usecols=[
+                "range",
+                "time",
+                "sun_azimuth",
+                "sun_elevation",
+                "radar_elevation",
+                "radar_azimuth",
+                "fmin",
+                "reflectivity",
+            ],
+        )
+    else:
+        df = pd.read_csv(
+            solar_file,
+            parse_dates=["time"],
+            index_col=["time"],
+            usecols=[
+                "range",
+                "time",
+                "sun_azimuth",
+                "sun_elevation",
+                "radar_elevation",
+                "radar_azimuth",
+                "fmin",
+                "reflectivity",
+            ],
+        )
+
+    return df
 
 
 def solar_widths_scan(beamwidth_h: float, beamwidth_v: float, dr: float) -> Tuple[float, float]:
@@ -229,21 +268,7 @@ def solar_statistics(
         Dataframe of the solar statistics (position/power/date/error)
     """
     try:
-        df = pd.read_csv(
-            solar_file,
-            parse_dates=["time"],
-            index_col=["time"],
-            usecols=[
-                "range",
-                "time",
-                "sun_azimuth",
-                "sun_elevation",
-                "radar_elevation",
-                "radar_azimuth",
-                "fmin",
-                "reflectivity",
-            ],
-        )
+        df = read_csv_files(solar_file)
     except Exception:
         traceback.print_exc()
         return None
@@ -257,13 +282,13 @@ def solar_statistics(
 
     # Remove outliers
     mad_val = mad_filter(df["sun_power"])
-    df["sun_power"][np.isnan(mad_val)] = np.NaN
+    df.loc[np.isnan(mad_val), "sun_power"] = np.nan
     df = df.dropna()
 
     df["delta_elev"] = df["sun_elevation"] - df["radar_elevation"]
     df["delta_azi"] = df["sun_azimuth"] - df["radar_azimuth"]
 
-    rslt = {"azi": np.NaN, "elev": np.NaN, "sun": np.NaN}
+    rslt = {"azi": np.nan, "elev": np.nan, "sun": np.nan}
 
     if len(df) < 5:
         return None

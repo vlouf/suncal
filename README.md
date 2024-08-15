@@ -6,7 +6,9 @@ Suncal is a software package for solar calibration of radar data. It utilizes ra
 
 Suncal requires the following dependencies:
 
-- [netCDF4](https://github.com/Unidata/netcdf4-python)
+Suncal requires the following dependencies:
+
+- [h5py](https://www.h5py.org)
 - [numpy](https://www.numpy.org/)
 - [pandas](https://pandas.pydata.org/)
 - [Py-ART](https://github.com/ARM-DOE/pyart)

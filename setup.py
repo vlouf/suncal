@@ -17,7 +17,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='suncal',
-    version='1.0',
+    version='1.0.20',
     description='Ground radar monitoring of calibration using the Sun as reference.',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -38,7 +38,7 @@ setup(
     ],
     keywords='radar weather meteorology calibration',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
-    install_requires=['numpy', 'arm_pyart', 'pandas', 'netCDF4', 'h5py', 'scipy', 'scikit-learn'],
+    install_requires=['numpy', 'pyodim', 'pandas', 'h5py', 'scipy', 'scikit-learn'],
     project_urls={
         'Bug Reports': 'https://github.com/vlouf/suncal/issues',
         'Source': 'https://github.com/vlouf/suncal/',
