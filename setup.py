@@ -9,7 +9,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='solarcal',
+    name='suncal',
     version='1.1.3',
     description='Ground radar monitoring of calibration using the Sun as reference.',
     long_description=long_description,
