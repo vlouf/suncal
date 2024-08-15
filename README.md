@@ -1,26 +1,26 @@
 # ☀️ Suncal
 
-Suncal is a software package for solar calibration of radar data. It utilizes radio noise from the Sun to check the quality of dual-polarization weather radar receivers for the S-band and C-band.
+**Suncal** is a software package for solar calibration of radar data respecting the ODIM H5 convention. 
+It utilizes radio noise from the Sun to check the quality of dual-polarization weather radar receivers for the S-band and C-band.
 
-## Dependencies
+## Installation
 
-Suncal requires the following dependencies:
+**Suncal** has been published on PyPI under the repository name `solarcal`:
 
-- [h5py](https://www.h5py.org)
-- [numpy](https://www.numpy.org/)
-- [pandas](https://pandas.pydata.org/)
+``` pip install solarcal ```
 
-These dependencies will be automatically installed by pip.
-
-In addition, you will need to install the `suncal` and `pyodim` libraries from Github:
-```
-pip install git+https://github.com/vlouf/suncal.git
-pip install git+https://github.com/vlouf/pyodim.git`
+To use it in your python script:
+```python
+import suncal
 ```
 
 ## Bibliography
 
-The Suncal algorithm is a Python implementation *inspired* by these works:
+The full description of this work is available in this paper:
+
+ > Louf, V., and A. Protat, 2023: Real-Time Monitoring of Weather Radar Network Calibration and Antenna Pointing. J. Atmos. Oceanic Technol., 40, 823–844, [https://doi.org/10.1175/JTECH-D-22-0118.1].
+
+The Suncal algorithm is a Python implementation is based on:
 
 Huuskonen, A., & Holleman, I. (2007). Determining Weather Radar Antenna Pointing Using Signals Detected from the Sun at Low Antenna Elevations. Journal of Atmospheric and Oceanic Technology, 24(3), 476–483. [10.1175/JTECH1978.1](https://doi.org/10.1175/JTECH1978.1)
 
