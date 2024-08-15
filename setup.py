@@ -1,10 +1,3 @@
-"""A setuptools based setup module.
-See:
-https://packaging.python.org/en/latest/distributing.html
-https://github.com/pypa/sampleproject
-"""
-
-# Always prefer setuptools over distutils
 from setuptools import setup, find_packages
 from os import path
 from io import open
@@ -17,7 +10,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='suncal',
-    version='1.0.20',
+    version='1.1.0',
     description='Ground radar monitoring of calibration using the Sun as reference.',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -25,16 +18,15 @@ setup(
     author='Valentin Louf',
     author_email='valentin.louf@bom.gov.au',
     classifiers=[
-        #   3 - Alpha
-        #   4 - Beta
-        #   5 - Production/Stable
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Atmospheric Science',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
     ],
     keywords='radar weather meteorology calibration',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
