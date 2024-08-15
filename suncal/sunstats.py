@@ -45,7 +45,7 @@ def mad_filter(x: np.ndarray, σ: float = 1.48) -> np.ndarray:
     xmed = np.median(x)
     umad = np.abs(x - xmed)
     mad = np.median(umad)
-    umad[umad >= σ * mad] = np.NaN
+    umad[umad >= σ * mad] = np.nan
     return umad
 
 
@@ -282,13 +282,13 @@ def solar_statistics(
 
     # Remove outliers
     mad_val = mad_filter(df["sun_power"])
-    df["sun_power"][np.isnan(mad_val)] = np.NaN
+    df.loc[np.isnan(mad_val), "sun_power"] = np.nan
     df = df.dropna()
 
     df["delta_elev"] = df["sun_elevation"] - df["radar_elevation"]
     df["delta_azi"] = df["sun_azimuth"] - df["radar_azimuth"]
 
-    rslt = {"azi": np.NaN, "elev": np.NaN, "sun": np.NaN}
+    rslt = {"azi": np.nan, "elev": np.nan, "sun": np.nan}
 
     if len(df) < 5:
         return None
