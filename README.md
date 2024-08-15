@@ -6,15 +6,9 @@ Suncal is a software package for solar calibration of radar data. It utilizes ra
 
 Suncal requires the following dependencies:
 
-Suncal requires the following dependencies:
-
 - [h5py](https://www.h5py.org)
 - [numpy](https://www.numpy.org/)
 - [pandas](https://pandas.pydata.org/)
-- [Py-ART](https://github.com/ARM-DOE/pyart)
-- [dask](https://dask.org/)
-- Scikit-learn
-- Scipy
 
 These dependencies will be automatically installed by pip.
 
@@ -23,10 +17,6 @@ In addition, you will need to install the `suncal` and `pyodim` libraries from G
 pip install git+https://github.com/vlouf/suncal.git
 pip install git+https://github.com/vlouf/pyodim.git`
 ```
-
-## Example Jupyter Notebook
-
-An example Jupyter notebook is available in the `example` directory. This notebook demonstrates how to use the `gpmmatch` library to a volume matching of GPM data against radar data. The notebook provides step-by-step instructions for downloading a sample of radar data from the Australian weather radar network archive. Finally, the notebook uses Matplotlib to create a plot of the results of the GPMmatch technique.
 
 ## Bibliography
 
@@ -47,31 +37,3 @@ Suncal utilizes a Sun position algorithm developed developped by: [https://githu
 
 Reda, I., & Andreas, A. (2004). Solar position algorithm for solar radiation applications. Solar Energy, 76(5), 577–589. [10.1016/j.solener.2003.12.003](https://doi.org/10.1016/j.solener.2003.12.003)
 
-## References
-
-If you use gpmmatch for a scientific publication, please cite the following paper:
-
-Louf, V., Protat, A., Warren, R. A., Collis, S. M., Wolff, D. B., Raunyiar, S., Jakob, C., & Petersen, W. A. (2019). An Integrated Approach to Weather Radar Calibration and Monitoring Using Ground Clutter and Satellite Comparisons. Journal of Atmospheric and Oceanic Technology, 36(1), 17–39. [10.1175/JTECH-D-18-0007.1](https://doi.org/10.1175/JTECH-D-18-0007.1)
-
-## License
-
-This library is open source and made freely available according to the below
-text:
-
-    Copyright 2020 Valentin Louf
-    Copyright 2023 Commonwealth of Australia, Bureau of Meteorology
-
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-        http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-
-A copy of the license is also provided in the LICENSE file included with the
-source distribution of the library.
