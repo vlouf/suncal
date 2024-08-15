@@ -12,13 +12,13 @@ jobs:
     permissions:
       id-token: write
       contents: read
-      
+
     steps:
       - name: Checkout source
-        uses: actions/checkout@main
+        uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@main
+        uses: actions/setup-python@v4
         with:
           python-version: "3.x"
 
@@ -27,12 +27,30 @@ jobs:
           python -m pip install --upgrade build twine
           python -m build
           twine check --strict dist/*
-          
+
+      - name: mint API token
+        id: mint-token
+        run: |
+          # retrieve the ambient OIDC token
+          resp=$(curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=pypi")
+          oidc_token=$(jq -r '.value' <<< "${resp}")
+
+          # exchange the OIDC token for an API token
+          resp=$(curl -X POST https://pypi.org/_/oidc/mint-token -d "{\"token\": \"${oidc_token}\"}")
+          api_token=$(jq -r '.token' <<< "${resp}")
+
+          # mask the newly minted API token, so that we don't accidentally leak it
+          echo "::add-mask::${api_token}"
+
+          # see the next step in the workflow for an example of using this step output
+          echo "api-token=${api_token}" >> "${GITHUB_OUTPUT}"
+
       - name: Publish distribution to PyPI
+        # gh-action-pypi-publish uses TWINE_PASSWORD automatically
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
+          password: ${{ steps.mint-token.outputs.api-token }}
 
       - name: Create GitHub Release
         id: create_release
@@ -50,7 +68,7 @@ jobs:
           export PKG=$(ls dist/ | grep tar)
           set -- $PKG
           echo "name=$1" >> $GITHUB_ENV
-          
+
       - name: Upload Release Asset (sdist) to GitHub
         id: upload-release-asset
         uses: actions/upload-release-asset@main
