@@ -15,6 +15,7 @@ Radar calibration code using the Sun as reference for position and power.
     sunpos_reflectivity
 """
 import itertools
+from typing import Tuple
 import warnings
 
 import h5py
@@ -102,6 +103,28 @@ def check_sun_in_scope(odimfile: str, zenith_threshold: float) -> bool:
         return False
     else:
         return True
+    
+
+def get_sunpos_for_location(date: pd.Timestamp, lon: float, lat: float, height: float = 0.) -> Tuple[float, float]:
+    """
+    Get the solar azimuth and elevation angle for a given datetime (UTC) and 
+    location (longitude, latitude, and altitude asl).
+    
+    Parameters:
+    ===========
+    date: pd.Timestamp
+    lon: float
+    lat: float
+    height: float
+
+    Returns:
+    ========
+    sun_azi: float
+    zenith: float
+    """
+    sun_azimuth, obs_el, _, _, _ = sunpos(date, lat, lon, height).T
+    zenith = 90 - obs_el
+    return sun_azimuth, zenith
 
 
 def sunpos_reflectivity(
