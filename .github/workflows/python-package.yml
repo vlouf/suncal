@@ -1,26 +1,59 @@
 name: Python package
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   test:
+    name: Test (Python ${{ matrix.python-version }})
+    # Pinned: Python 3.9 has no build for ubuntu-26.04, which ubuntu-latest will move to.
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
 
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install package and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install . --group test
+
+      # Uses the pytest command, not `python -m pytest`, so that the repository
+      # root stays off sys.path and the tests import the installed package.
+      - name: Run tests
+        run: pytest
+
+  build:
+    name: Build distributions
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v7
 
-    - name: Set up Python
-      uses: actions/setup-python@v3
-      with:
-        python-version: '3.x'
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pytest
-        pip install -e .  # Assuming your library is in a package
-
-    - name: Run tests
-      run: pytest
+      - name: Build and check metadata
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build
+          twine check --strict dist/*

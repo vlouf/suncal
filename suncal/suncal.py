@@ -5,13 +5,15 @@ Radar calibration code using the Sun as reference for position and power.
 @creator: Valentin Louf
 @creator_email: valentin.louf@bom.gov.au
 @creation: 21/02/2020
-@date: 24/04/2024
+@date: 06/11/2026
 
 .. autosummary::
     :toctree: generated/
 
     SunNotFoundError
     correct_refractivity
+    check_sun_in_scope
+    get_sunpos_for_location
     sunpos_reflectivity
 """
 import itertools
@@ -141,7 +143,13 @@ def sunpos_reflectivity(
     Parameters:
     -----------
     infile: str
-        Input radar file. Must be compatible with Py-ART.
+        Input radar file.
+    refl_name: str
+        Name of the reflectivity field in the radar file.
+    corr_refl_name: str
+        Name of the corrected reflectivity field in the radar file.
+    zdr_name: str
+        Name of the differential reflectivity field in the radar file.
     zenith_threshold: float
         Maximum elevation angle for to look for the Sun.
 
@@ -171,8 +179,8 @@ def sunpos_reflectivity(
         raise SunNotFoundError("Sun not within scope.")
 
     # Potential hit from the Sun. Read more.
-    nradar = pyodim.read_odim(infile, lazy_load=True)
-    radar = nradar[0].compute()
+    nradar = pyodim.read_odim(infile)
+    radar = nradar[0]
 
     lat = radar.attrs["latitude"]
     lon = radar.attrs["longitude"]
@@ -188,9 +196,7 @@ def sunpos_reflectivity(
     data_dict = dict()
     for k in output_keys:
         data_dict[k] = np.array([])
-    data_dict['time'] = []  # Not a numpy array
-
-    nradar = [r.compute() for r in nradar]
+    data_dict['time'] = []  # Not a numpy array    
 
     # Correct ground-radar elevation from the refraction:
     # Truth = Apparant - refraction angle cf. Holleman (2013)
