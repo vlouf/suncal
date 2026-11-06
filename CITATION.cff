@@ -9,7 +9,7 @@ authors:
     given-names: Alain
     orcid: https://orcid.org/0000-0002-8933-874X
 date-released: 2026-11-06
-version: 1.1.5
+version: 1.2.0
 doi: 10.1175/JTECH-D-22-0118.1
 license: Apache-2.0
 repository-code: "https://github.com/vlouf/suncal"
