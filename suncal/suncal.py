@@ -56,6 +56,11 @@ def correct_refractivity(elevation: float, n0: float = 1.000313, k: float = 5 / 
     return np.rad2deg(refra)
 
 
+def _attr_to_str(value) -> str:
+    """ODIM string attributes are read as bytes or str, depending on how the file was written."""
+    return value.decode() if isinstance(value, bytes) else str(value)
+
+
 def check_sun_in_scope(odimfile: str, zenith_threshold: float) -> bool:
     """
     To save computing time, we check the first timestep only to determine
@@ -76,8 +81,8 @@ def check_sun_in_scope(odimfile: str, zenith_threshold: float) -> bool:
     dates = []
     with h5py.File(odimfile) as odim:
         # Extract volume metadata date and time      
-        vol_date = odim["what"].attrs["date"].decode()
-        vol_time = odim["what"].attrs["time"].decode()
+        vol_date = _attr_to_str(odim["what"].attrs["date"])
+        vol_time = _attr_to_str(odim["what"].attrs["time"])
 
         lon = odim["where"].attrs["lon"]
         lat = odim["where"].attrs["lat"]
@@ -88,8 +93,8 @@ def check_sun_in_scope(odimfile: str, zenith_threshold: float) -> bool:
                 break
 
             # Extract end date and time of each dataset
-            dtmp = odim[f"dataset{dt_idx}/what"].attrs["enddate"].decode()
-            ttmp = odim[f"dataset{dt_idx}/what"].attrs["endtime"].decode()
+            dtmp = _attr_to_str(odim[f"dataset{dt_idx}/what"].attrs["enddate"])
+            ttmp = _attr_to_str(odim[f"dataset{dt_idx}/what"].attrs["endtime"])
             dates.append(pd.Timestamp(dtmp + ttmp))
 
     if len(dates) == 0:
@@ -238,7 +243,7 @@ def sunpos_reflectivity(
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             pos = (
-                (np.abs(azi2d - sunazi2d) < 5)
+                (np.abs((azi2d - sunazi2d + 180) % 360 - 180) < 5)  # Wrap at north.
                 & (R > 50e3)
                 & (~np.isnan(reflectivity))
                 & (reflectivity < 15)

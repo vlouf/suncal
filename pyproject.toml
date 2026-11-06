@@ -49,3 +49,5 @@ include = ["suncal*"]
 
 [tool.pytest.ini_options]
 testpaths = ["test"]
+# An xfail marks a known bug: once it is fixed, the test fails until the marker is removed.
+xfail_strict = true
