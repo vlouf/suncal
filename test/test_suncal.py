@@ -53,14 +53,19 @@ def test_check_sun_in_scope_falls_back_on_volume_time(odim_copy):
     assert suncal.check_sun_in_scope(odim_copy, 10) is True
 
 
-@pytest.mark.xfail(raises=AttributeError, reason="check_sun_in_scope assumes bytes attributes and calls .decode().")
-def test_check_sun_in_scope_accepts_string_attributes(odim_copy):
+@pytest.mark.parametrize("remove_datasets", [False, True], ids=["sweep-times", "volume-time"])
+def test_check_sun_in_scope_accepts_string_attributes(odim_copy, remove_datasets):
+    # Files written with variable-length strings read back as str, not bytes.
     with h5py.File(odim_copy, "r+") as odim:
-        for name in odim:
-            if name.startswith("dataset"):
-                what = odim[f"{name}/what"].attrs
-                what["enddate"] = what["enddate"].decode()
-                what["endtime"] = what["endtime"].decode()
+        for key in ("date", "time"):
+            odim["what"].attrs[key] = odim["what"].attrs[key].decode()
+        for name in [name for name in odim if name.startswith("dataset")]:
+            if remove_datasets:
+                del odim[name]
+                continue
+            what = odim[f"{name}/what"].attrs
+            what["enddate"] = what["enddate"].decode()
+            what["endtime"] = what["endtime"].decode()
     assert suncal.check_sun_in_scope(odim_copy, 10) is True
 
 
@@ -179,7 +184,6 @@ def test_input_file_is_released_after_reading(odim_copy):
         pass
 
 
-@pytest.mark.xfail(reason="sunpos_reflectivity compares azimuths without wrapping at 360 deg.")
 def test_hits_wrap_around_north(odim_copy, fill_quantity, monkeypatch):
     fill_quantity(odim_copy, "TH", 0.0)
     fill_quantity(odim_copy, "DBZH")

@@ -17,8 +17,6 @@ TRUE_AZI = 0.3
 TRUE_ELEV = -0.2
 TRUE_POWER = -85.0
 
-P0_BUG = "sun_fit_3P and sun_fit_5P read c from reg.coef_, which is 0: the constant is in reg.intercept_."
-
 
 def solar_power(x, y):
     """Power of the Sun in the 3P model, peaking at (TRUE_AZI, TRUE_ELEV)."""
@@ -81,11 +79,16 @@ def test_fit_recovers_pointing_offset(fit, scan):
     assert r_sq == pytest.approx(1)
 
 
-@pytest.mark.xfail(reason=P0_BUG)
 @pytest.mark.parametrize("fit", [sunstats.sun_fit_3P, sunstats.sun_fit_5P], ids=["3P", "5P"])
 def test_fit_recovers_sun_power(fit, scan):
     _, _, p0, _ = fit(*scan, beamwidth=BEAMWIDTH, dr=DR)
     assert p0 == pytest.approx(TRUE_POWER)
+
+
+def test_solar_statistics_recovers_sun_power(hits_csv):
+    stats = suncal.solar_statistics(hits_csv, BEAMWIDTH, DR, do_5P=True).iloc[0]
+    assert stats["p0"] == pytest.approx(TRUE_POWER)
+    assert stats["p0_5P"] == pytest.approx(TRUE_POWER)
 
 
 @pytest.mark.parametrize("fit, size", [(sunstats.sun_fit_3P, 3), (sunstats.sun_fit_5P, 5)], ids=["3P", "5P"])
@@ -156,8 +159,7 @@ def test_solar_statistics_regression_on_real_data(solar_csv):
     assert stats["elev_med"] == pytest.approx(-0.06006, abs=1e-4)
 
 
-@pytest.mark.xfail(raises=TypeError, reason="solar_statistics unpacks None when sun_fit_5P gets too few points.")
-def test_solar_statistics_5p_with_few_hits_does_not_crash(tmp_path):
+def test_solar_statistics_5p_with_few_hits_gives_nan(tmp_path):
     # 7 rows leave exactly 5 after the MAD filter: enough for 3P, too few for 5P.
     size = 7
     frame = pd.DataFrame(
@@ -174,10 +176,11 @@ def test_solar_statistics_5p_with_few_hits_does_not_crash(tmp_path):
     )
     path = tmp_path / "few.csv"
     frame.to_csv(path, index=False)
-    assert suncal.solar_statistics(str(path), do_5P=True) is not None
+    stats = suncal.solar_statistics(str(path), do_5P=True).iloc[0]
+    assert np.isnan(stats[["azi_5P", "elev_5P", "p0_5P", "r_sq_5P"]].astype(float)).all()
+    assert np.isfinite(stats[["azi", "elev"]].astype(float)).all()
 
 
-@pytest.mark.xfail(reason="solar_statistics takes sun_azimuth - radar_azimuth without wrapping at 360 deg.")
 def test_solar_statistics_wraps_azimuth_around_north(tmp_path):
     rng = np.random.default_rng(0)
     size = 60
@@ -195,4 +198,6 @@ def test_solar_statistics_wraps_azimuth_around_north(tmp_path):
     )
     path = tmp_path / "north.csv"
     frame.to_csv(path, index=False)
-    assert abs(suncal.solar_statistics(str(path))["azi"].iloc[0]) < 5
+    stats = suncal.solar_statistics(str(path)).iloc[0]
+    assert abs(stats["azi"]) < 5
+    assert abs(stats["azi_med"]) < 5
