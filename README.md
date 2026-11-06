@@ -50,3 +50,7 @@ Suncal utilizes a Sun position algorithm developed developped by: [https://githu
 
 - **Reda, I., & Andreas, A.** (2004). *Solar position algorithm for solar radiation applications*. Solar Energy, 76(5), 577–589. [10.1016/j.solener.2003.12.003](https://doi.org/10.1016/j.solener.2003.12.003)
 
+## License
+
+Suncal is licensed under the [Apache License 2.0](LICENSE), except for `suncal/spa.py`, which is derived from [sun-position](https://github.com/s-bear/sun-position) and remains under the [MIT License](LICENSES/MIT-sun-position.txt).
+
