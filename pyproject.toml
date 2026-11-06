@@ -29,9 +29,8 @@ classifiers = [
 dependencies = [
     "h5py",
     "numpy",
-    "pandas",
-    # The dask extra is required: suncal reads volumes with pyodim's lazy loader.
-    "pyodim[dask]",
+    "pandas",    
+    "pyodim",
     "scikit-learn",
     "scipy",
 ]
