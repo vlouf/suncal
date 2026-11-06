@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 # The distribution is "solarcal" because "suncal" on PyPI is an unrelated project.
 # The import name is still `suncal`.
 name = "solarcal"
-version = "1.1.5"
+version = "1.2.0"
 description = "Ground radar monitoring of calibration using the Sun as reference."
 readme = "README.md"
 requires-python = ">=3.9"
