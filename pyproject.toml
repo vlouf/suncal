@@ -30,7 +30,7 @@ dependencies = [
     "h5py",
     "numpy",
     "pandas",    
-    "pyodim",
+    "pyodim>=0.7",
     "scikit-learn",
     "scipy",
 ]
