@@ -10,8 +10,9 @@ version = "1.1.5"
 description = "Ground radar monitoring of calibration using the Sun as reference."
 readme = "README.md"
 requires-python = ">=3.9"
-license = "Apache-2.0"
-license-files = ["LICENSE"]
+# Apache-2.0 for suncal, MIT for suncal/spa.py (see LICENSES/MIT-sun-position.txt).
+license = "Apache-2.0 AND MIT"
+license-files = ["LICENSE", "LICENSES/*"]
 authors = [{ name = "Valentin Louf", email = "valentin.louf@bom.gov.au" }]
 keywords = ["radar", "weather", "meteorology", "calibration"]
 classifiers = [
