@@ -170,7 +170,8 @@ def sun_fit_3P(
     inx = np.array([x.T, y.T, np.ones_like(x).T]).T
     reg = linear_model.LinearRegression()
     reg.fit(inx, z)
-    b1, b2, c = reg.coef_
+    b1, b2, _ = reg.coef_
+    c = reg.intercept_  # The constant is fitted here: its column in inx gets a coefficient of 0.
     r_sq = reg.score(inx, z)
 
     x0 = -b1 / (2 * a1)
@@ -222,7 +223,8 @@ def sun_fit_5P(
     inx = np.array([x.T ** 2, y.T ** 2, x.T, y.T, np.ones_like(x).T]).T
     reg = linear_model.LinearRegression()
     reg.fit(inx, z)
-    a1, a2, b1, b2, c = np.transpose(reg.coef_)
+    a1, a2, b1, b2, _ = np.transpose(reg.coef_)
+    c = reg.intercept_  # The constant is fitted here: its column in inx gets a coefficient of 0.
     r_sq = reg.score(inx, z)
 
     x0 = -b1 / (2 * a1)
@@ -286,7 +288,7 @@ def solar_statistics(
     df = df.dropna()
 
     df["delta_elev"] = df["sun_elevation"] - df["radar_elevation"]
-    df["delta_azi"] = df["sun_azimuth"] - df["radar_azimuth"]
+    df["delta_azi"] = (df["sun_azimuth"] - df["radar_azimuth"] + 180) % 360 - 180  # Wrap at north.
 
     rslt = {"azi": np.nan, "elev": np.nan, "sun": np.nan}
 
@@ -298,6 +300,8 @@ def solar_statistics(
     z = df.sun_power
     if do_5P:
         out = sun_fit_5P(x, y, z, beamwidth=beamwidth, dr=dr)
+        if out is None:  # Enough points for the 3P model, too few for this one.
+            out = (np.nan, np.nan, np.nan, np.nan)
         rslt["azi_5P"], rslt["elev_5P"], rslt["p0_5P"], rslt["r_sq_5P"] = out
 
     rslt["azi"], rslt["elev"], rslt["p0"], rslt["r_sq"] = sun_fit_3P(x, y, z, beamwidth=beamwidth, dr=dr)
