@@ -59,7 +59,7 @@ MIT license above; the rest of suncal is under the Apache License 2.0.
     topocentric_sunpos
     sunpos
 """
-from datetime import datetime
+import datetime
 import numpy as np
 
 
@@ -72,7 +72,7 @@ class _sp:
         except AttributeError:
             try:
                 return _sp.calendar_time(
-                    datetime.utcfromtimestamp(dt)
+                    datetime.datetime.fromtimestamp(dt, datetime.UTC)
                 )  # will raise OSError if dt is not acceptable
             except:
                 raise TypeError("dt must be datetime object or POSIX timestamp")
@@ -574,7 +574,8 @@ def arcdist(p0, p1, radians=False):
         p0, p1 = np.deg2rad(p0), np.deg2rad(p1)
     a0, z0 = p0[..., 0], p0[..., 1]
     a1, z1 = p1[..., 0], p1[..., 1]
-    d = np.arccos(np.cos(z0) * np.cos(z1) + np.cos(a0 - a1) * np.sin(z0) * np.sin(z1))
+    # Rounding can push the cosine just outside [-1, 1], where arccos returns nan.
+    d = np.arccos(np.clip(np.cos(z0) * np.cos(z1) + np.cos(a0 - a1) * np.sin(z0) * np.sin(z1), -1, 1))
     if radians:
         return d
     else:

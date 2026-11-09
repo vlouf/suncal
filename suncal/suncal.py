@@ -77,10 +77,10 @@ def check_sun_in_scope(odimfile: str, zenith_threshold: float) -> bool:
     ========
     True/False: bool
 
-    """    
+    """
     dates = []
     with h5py.File(odimfile) as odim:
-        # Extract volume metadata date and time      
+        # Extract volume metadata date and time
         vol_date = _attr_to_str(odim["what"].attrs["date"])
         vol_time = _attr_to_str(odim["what"].attrs["time"])
 
@@ -110,13 +110,13 @@ def check_sun_in_scope(odimfile: str, zenith_threshold: float) -> bool:
         return False
     else:
         return True
-    
+
 
 def get_sunpos_for_location(date: pd.Timestamp, lon: float, lat: float, height: float = 0.) -> Tuple[float, float]:
     """
-    Get the solar azimuth and elevation angle for a given datetime (UTC) and 
+    Get the solar azimuth and elevation angle for a given datetime (UTC) and
     location (longitude, latitude, and altitude asl).
-    
+
     Parameters:
     ===========
     date: pd.Timestamp
@@ -189,7 +189,7 @@ def sunpos_reflectivity(
 
     lat = radar.attrs["latitude"]
     lon = radar.attrs["longitude"]
-    height = radar.attrs["height"]    
+    height = radar.attrs["height"]
 
     try:
         zdr = radar[zdr_name].values
@@ -201,7 +201,7 @@ def sunpos_reflectivity(
     data_dict = dict()
     for k in output_keys:
         data_dict[k] = np.array([])
-    data_dict['time'] = []  # Not a numpy array    
+    data_dict['time'] = []  # Not a numpy array
 
     # Correct ground-radar elevation from the refraction:
     # Truth = Apparant - refraction angle cf. Holleman (2013)
@@ -211,13 +211,13 @@ def sunpos_reflectivity(
         elevation = elevation - correct_refractivity(elevation)
         if elevation < 1:
             continue
-            
+
         dtime = pd.to_datetime(radar.time).to_pydatetime().tolist()  # Convert to list of datetime
         sun_azimuth, zenith, _, _, _ = sunpos(dtime, lat, lon, height).T
         zenith = 90 - zenith  # Change coordinates from zenith angle to elevation angle
         if all(zenith > zenith_threshold) or all(zenith < 0):
-            continue 
-            
+            continue
+
         if all(np.abs(elevation - zenith) > 5):
             continue
 
