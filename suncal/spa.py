@@ -59,6 +59,7 @@ MIT license above; the rest of suncal is under the Apache License 2.0.
     topocentric_sunpos
     sunpos
 """
+import sys
 import datetime
 import numpy as np
 
@@ -71,9 +72,13 @@ class _sp:
             return x
         except AttributeError:
             try:
-                return _sp.calendar_time(
-                    datetime.datetime.fromtimestamp(dt, datetime.UTC)
-                )  # will raise OSError if dt is not acceptable
+                if sys.version_info < (3, 11):                    
+                    cal = _sp.calendar_time(datetime.datetime.utcfromtimestamp(dt))  
+                else:
+                    # For Python 3.11 and above, use datetime.fromtimestamp with datetime.UTC
+                    cal = _sp.calendar_time(datetime.datetime.fromtimestamp(dt, datetime.UTC))  
+
+                return cal
             except:
                 raise TypeError("dt must be datetime object or POSIX timestamp")
 
