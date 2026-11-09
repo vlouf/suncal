@@ -34,7 +34,14 @@ dependencies = [
     "pyodim>=0.7",
     "scikit-learn",
     "scipy",
+    "xarray",
 ]
+
+[project.optional-dependencies]
+# Input of radar volumes opened with xradar (xarray.DataTree). xradar 0.8 is the first
+# release built on xarray.DataTree, which needs Python 3.10 or later: on Python 3.9 this
+# extra installs nothing and suncal reads ODIM files with pyodim only.
+xradar = ["xradar>=0.8; python_version >= '3.10'"]
 
 [project.urls]
 Homepage = "https://github.com/vlouf/suncal"
@@ -42,7 +49,7 @@ Homepage = "https://github.com/vlouf/suncal"
 Source = "https://github.com/vlouf/suncal/"
 
 [dependency-groups]
-test = ["pytest"]
+test = ["pytest", "xradar>=0.8; python_version >= '3.10'"]
 
 [tool.setuptools.packages.find]
 include = ["suncal*"]

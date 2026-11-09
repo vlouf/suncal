@@ -11,6 +11,16 @@ dates are approximate.
 
 ## [1.2.1] - 2026-11-XX
 
+### Added
+- Optional xradar input: `sunpos_reflectivity` and `check_sun_in_scope` accept a radar
+  volume opened with xradar (`xarray.DataTree`), on Python 3.10 or later. Install with
+  `pip install "solarcal[xradar]"`. File paths are still read with `pyodim`, unchanged.
+  On an ODIM file, both inputs give the same solar hits.
+- `xarray` is now listed as a direct dependency (it was already installed with `pyodim`).
+
+### Changed
+- A missing reflectivity field now raises a `KeyError` that lists the available fields.
+
 ### Fixed
 - Depracation warning: "datetime.datetime.utcfromtimestamp() is deprecated and scheduled for removal in a future version."
 - Clipping issue with cosine, for two identical points, the cosine of the distance should be exactly 1. Floating-point rounding makes come out slightly above 1.

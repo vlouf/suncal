@@ -5,7 +5,7 @@ Radar calibration code using the Sun as reference for position and power.
 @creator: Valentin Louf
 @creator_email: valentin.louf@bom.gov.au
 @creation: 21/02/2020
-@date: 06/11/2026
+@date: 09/11/2026
 
 .. autosummary::
     :toctree: generated/
@@ -17,19 +17,83 @@ Radar calibration code using the Sun as reference for position and power.
     sunpos_reflectivity
 """
 import itertools
-from typing import Tuple
+from typing import List, Tuple, Union
 import warnings
 
 import h5py
 import pyodim
 import numpy as np
 import pandas as pd
+import xarray as xr
 
 from .spa import sunpos
+
+# xarray.DataTree, used by xradar, exists from xarray 2024.10, which needs Python 3.10 or
+# later. With older xarray (Python 3.9) it is None, and only ODIM file input is available.
+DataTree = getattr(xr, "DataTree", None)
 
 
 class SunNotFoundError(Exception):
     pass
+
+
+def _is_datatree(radar) -> bool:
+    return DataTree is not None and isinstance(radar, DataTree)
+
+
+def _reject_unsupported_tree(radar) -> None:
+    """Give a clear error for a DataTree this xarray cannot handle (e.g. xarray-datatree on Python 3.9)."""
+    if type(radar).__name__ == "DataTree" and not _is_datatree(radar):
+        raise TypeError(
+            "xradar input needs xarray.DataTree (xarray 2024.10 or later, Python 3.10 or later). "
+            f"Got {type(radar).__module__}.{type(radar).__name__}. Pass the ODIM file path instead."
+        )
+
+
+def _sweep_nodes(radar) -> list:
+    """Sweep groups of an xradar DataTree, in file order (sweep_0, sweep_1, ...)."""
+    nodes = [node for name, node in radar.children.items() if name.startswith("sweep_")]
+    if len(nodes) == 0:
+        raise ValueError("The DataTree has no sweep_* group.")
+    return sorted(nodes, key=lambda node: int(node.name.split("_")[1]))
+
+
+def _site_from_datatree(radar) -> Tuple[float, float, float]:
+    """Radar latitude, longitude and altitude (m) from the root of an xradar DataTree."""
+    root = radar.to_dataset()
+    site = []
+    for name in ("latitude", "longitude", "altitude"):
+        if name not in root:
+            raise KeyError(f"The DataTree root has no '{name}' variable.")
+        site.append(float(root[name].values))
+    return tuple(site)
+
+
+def _sweeps_from_datatree(radar) -> List[Tuple[float, xr.Dataset]]:
+    """
+    (elevation, sweep) pairs from an xradar DataTree, sorted by elevation like pyodim.
+
+    The elevation is the nominal angle of the sweep (sweep_fixed_angle), which is what
+    pyodim gives for ODIM files (where/elangle).
+    """
+    sweeps = []
+    for node in _sweep_nodes(radar):
+        sweep = node.to_dataset()
+        if "sweep_fixed_angle" in sweep:
+            elevation = float(sweep["sweep_fixed_angle"].values)
+        else:
+            elevation = float(np.nanmedian(sweep["elevation"].values))
+        sweeps.append((elevation, sweep))
+    return sorted(sweeps, key=lambda pair: pair[0])
+
+
+def _get_field(sweep: xr.Dataset, name: str) -> np.ndarray:
+    if name not in sweep:
+        raise KeyError(
+            f"No field '{name}' in the radar data. Available fields: {sorted(sweep.data_vars)}. "
+            "Note that xradar 0.13 and later name the ODIM quantity TH as DBTH."
+        )
+    return sweep[name].values
 
 
 def correct_refractivity(elevation: float, n0: float = 1.000313, k: float = 5 / 4) -> float:
@@ -61,15 +125,16 @@ def _attr_to_str(value) -> str:
     return value.decode() if isinstance(value, bytes) else str(value)
 
 
-def check_sun_in_scope(odimfile: str, zenith_threshold: float) -> bool:
+def check_sun_in_scope(odimfile: Union[str, "xr.DataTree"], zenith_threshold: float) -> bool:
     """
     To save computing time, we check the first timestep only to determine
     if it's worth to look into the dataset or we can skip it.
 
     Parameters:
     -----------
-    odimfile: str
-        Input ODIM radar file
+    odimfile: str or xarray.DataTree
+        Input ODIM radar file, or a radar volume opened with xradar
+        (Python 3.10 or later).
     zenith_threshold: float
         Maximum elevation angle for to look for the Sun.
 
@@ -78,6 +143,14 @@ def check_sun_in_scope(odimfile: str, zenith_threshold: float) -> bool:
     True/False: bool
 
     """
+    _reject_unsupported_tree(odimfile)
+    if _is_datatree(odimfile):
+        lat, lon, height = _site_from_datatree(odimfile)
+        # End time of each sweep, in file order, as for the ODIM datasets below.
+        dates = [pd.Timestamp(pd.to_datetime(node["time"].values).max()) for node in _sweep_nodes(odimfile)]
+        dtime = dates[len(dates) // 2]
+        return _sun_in_scope(dtime, lat, lon, height, zenith_threshold)
+
     dates = []
     with h5py.File(odimfile) as odim:
         # Extract volume metadata date and time
@@ -104,6 +177,10 @@ def check_sun_in_scope(odimfile: str, zenith_threshold: float) -> bool:
         # Half time of the actual acquisition of obs.
         dtime = dates[len(dates) // 2]
 
+    return _sun_in_scope(dtime, lat, lon, height, zenith_threshold)
+
+
+def _sun_in_scope(dtime: pd.Timestamp, lat: float, lon: float, height: float, zenith_threshold: float) -> bool:
     # Compute Sun's position for given lat/lon and time.
     sun_azimuth, zenith, _, _, _ = sunpos(dtime, lat, lon, height).T
     if (90 - zenith) > (zenith_threshold + 2) or (90 - zenith) < -2:
@@ -135,7 +212,7 @@ def get_sunpos_for_location(date: pd.Timestamp, lon: float, lat: float, height: 
 
 
 def sunpos_reflectivity(
-    infile: str,
+    infile: Union[str, "xr.DataTree"],
     refl_name: str = "TH",
     corr_refl_name: str = "DBZH",
     zdr_name: str = "ZDR",
@@ -147,8 +224,11 @@ def sunpos_reflectivity(
 
     Parameters:
     -----------
-    infile: str
-        Input radar file.
+    infile: str or xarray.DataTree
+        Input ODIM radar file, read with pyodim. Or, with Python 3.10 or later,
+        a radar volume already opened with xradar, e.g.
+        ``xr.open_datatree(file, engine="odim")``. xradar 0.13 and later rename
+        the ODIM quantity TH to DBTH: then pass ``refl_name="DBTH"``.
     refl_name: str
         Name of the reflectivity field in the radar file.
     corr_refl_name: str
@@ -169,6 +249,39 @@ def sunpos_reflectivity(
     if zenith_threshold > 90:
         raise ValueError("Living in Uranus?")
 
+    if not check_sun_in_scope(infile, zenith_threshold):
+        raise SunNotFoundError("Sun not within scope.")
+
+    # Potential hit from the Sun. Read more.
+    if _is_datatree(infile):
+        lat, lon, height = _site_from_datatree(infile)
+        sweeps = _sweeps_from_datatree(infile)
+    else:
+        nradar = pyodim.read_odim(infile)
+        lat = nradar[0].attrs["latitude"]
+        lon = nradar[0].attrs["longitude"]
+        height = nradar[0].attrs["height"]
+        sweeps = [(radar.elevation.values[0], radar) for radar in nradar]
+
+    return _extract_hits(sweeps, lat, lon, height, refl_name, corr_refl_name, zdr_name, zenith_threshold)
+
+
+def _extract_hits(
+    sweeps: List[Tuple[float, xr.Dataset]],
+    lat: float,
+    lon: float,
+    height: float,
+    refl_name: str,
+    corr_refl_name: str,
+    zdr_name: str,
+    zenith_threshold: float,
+) -> pd.DataFrame:
+    """
+    Solar hit selection, common to all input types.
+
+    sweeps: list of (nominal elevation in deg, sweep), each sweep an xarray.Dataset
+    with dimensions (azimuth, range) and coordinates azimuth, range (m) and time.
+    """
     output_keys = [
         "time",
         "range",
@@ -180,23 +293,10 @@ def sunpos_reflectivity(
         "reflectivity"
     ]
 
-    if not check_sun_in_scope(infile, zenith_threshold):
-        raise SunNotFoundError("Sun not within scope.")
-
-    # Potential hit from the Sun. Read more.
-    nradar = pyodim.read_odim(infile)
-    radar = nradar[0]
-
-    lat = radar.attrs["latitude"]
-    lon = radar.attrs["longitude"]
-    height = radar.attrs["height"]
-
-    try:
-        zdr = radar[zdr_name].values
+    # ZDR is optional: look for it in the first sweep only.
+    is_zdr = zdr_name in sweeps[0][1]
+    if is_zdr:
         output_keys.append("differential_reflectivity")
-        is_zdr = True
-    except KeyError:
-        is_zdr = False
 
     data_dict = dict()
     for k in output_keys:
@@ -206,13 +306,12 @@ def sunpos_reflectivity(
     # Correct ground-radar elevation from the refraction:
     # Truth = Apparant - refraction angle cf. Holleman (2013)
     count = 0
-    for radar in nradar:
-        elevation = radar.elevation.values[0]
+    for elevation, radar in sweeps:
         elevation = elevation - correct_refractivity(elevation)
         if elevation < 1:
             continue
 
-        dtime = pd.to_datetime(radar.time).to_pydatetime().tolist()  # Convert to list of datetime
+        dtime = pd.to_datetime(radar.time.values).to_pydatetime().tolist()  # Convert to list of datetime
         sun_azimuth, zenith, _, _, _ = sunpos(dtime, lat, lon, height).T
         zenith = 90 - zenith  # Change coordinates from zenith angle to elevation angle
         if all(zenith > zenith_threshold) or all(zenith < 0):
@@ -221,10 +320,10 @@ def sunpos_reflectivity(
         if all(np.abs(elevation - zenith) > 5):
             continue
 
-        reflectivity = radar[refl_name].values
-        zh = radar[corr_refl_name].values
+        reflectivity = _get_field(radar, refl_name)
+        zh = _get_field(radar, corr_refl_name)
         if is_zdr:
-            zdr = radar[zdr_name].values
+            zdr = _get_field(radar, zdr_name)
 
         # Ray filling ratio, i.e. number of non-NA gate in ray
         fmin = 1 - np.sum(np.isnan(reflectivity), axis=1) / reflectivity.shape[1]

@@ -26,7 +26,27 @@ import suncal
 - Python 3.9 or later
 - Radar data in ODIM H5 format
 
-`pip` installs the required packages automatically: `h5py`, `numpy`, `pandas`, `pyodim` (0.7 or later), `scikit-learn` and `scipy`.
+`pip` installs the required packages automatically: `h5py`, `numpy`, `pandas`, `pyodim` (0.7 or later), `scikit-learn`, `scipy` and `xarray`.
+
+### Optional: xradar input
+
+With Python 3.10 or later, `sunpos_reflectivity` and `check_sun_in_scope` also accept a radar volume already opened with [xradar](https://github.com/openradar/xradar) (an `xarray.DataTree`). Install the extra:
+
+```bash
+pip install "solarcal[xradar]"
+```
+
+```python
+import xarray as xr
+import suncal
+
+radar = xr.open_datatree("volume.pvol.h5", engine="odim")  # xradar 0.13 or later
+hits = suncal.sunpos_reflectivity(radar, refl_name="DBTH")
+```
+
+xradar 0.13 and later rename the ODIM quantity `TH` to `DBTH`, so pass the field names as they appear in the DataTree. With older xradar versions, open the file with `xradar.io.open_odim_datatree` and keep `refl_name="TH"`. For an ODIM file, the solar hits are the same as with the default input, up to a few milliseconds in the ray times.
+
+ODIM file paths are still read with `pyodim`, which remains the default. On Python 3.9, only file input is available.
 
 ### Upgrading
 
