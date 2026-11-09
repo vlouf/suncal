@@ -9,7 +9,7 @@ PyPI is unrelated. Only 1.1.3, 1.1.5 and later versions were published on PyPI.
 Entries before 1.1.3 were reconstructed from the git history, so their contents and
 dates are approximate.
 
-## [1.2.1] - 2026-11-XX
+## [1.2.1] - 2026-11-09
 
 ### Fixed
 - Depracation warning: "datetime.datetime.utcfromtimestamp() is deprecated and scheduled for removal in a future version."
